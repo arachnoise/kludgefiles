@@ -1,0 +1,83 @@
+
+; unpack.kas
+;
+; unpacks a value into an array bit by bit
+;
+; pseudocode
+;
+; 		get bit i: shift value by distance from left side
+;			send bit to array i
+;
+
+	load	[myValue]
+	sto		[UPpackedVal]
+	load	buffer
+	sto		[UPptrUnpacked]
+	load	EndHere
+	add		[jumpBase]
+	sto		[UPreturn]
+	jmp		Unpack
+	
+EndHere:
+	halt
+	
+jumpBase:	dword	0x04200000
+myValue:	dword	328						;my Value
+buffer:		dword	0, 0, 0, 0, 0, 0, 0, 0
+			dword	0, 0, 0, 0, 0, 0, 0, 0
+			dword	0, 0, 0, 0, 0, 0, 0, 0
+			dword	0, 0, 0, 0, 0, 0, 0, 0
+		
+Unpack:
+	load	[UPpackedVal]
+	sto		[UPworkingVal]
+	
+	load	0
+	sto		[UPcurrPos]
+	
+	load	32					;number of bits in an addressed value
+	
+UPLoop:
+	add		-1
+	sto		[UPfromLeft]		;update distance from big (left) end of value
+
+	load	[UPworkingVal]		;get bit
+	shl		[UPfromLeft]
+
+	jnz		UPUPBitIsSet
+
+UPBitIsUnset:
+	load	0					;store bit in accumulator
+	jmp		UPEnd
+	
+UPUPBitIsSet:
+	load	-1
+	shl		[UPcurrPos]			;if set - clear this bit
+	add		[UPworkingVal]
+	sto		[UPworkingVal]
+	
+	load	1					;store bit in accumulator
+
+UPEnd:
+	sto		[[UPptrUnpacked]]
+	
+	load	[UPptrUnpacked]
+	add		1
+	sto		[UPptrUnpacked]
+	
+	load	[UPcurrPos]			;update UPcurrPos
+	add		1
+	sto		[UPcurrPos]			
+	
+	load	[UPfromLeft]		;if more bits to shift
+	jnz		UPLoop				;start over
+	
+UPreturn:		dword 0
+
+	;parameters (public)
+UPpackedVal:	dword 0			;packed Value
+UPptrUnpacked:	dword 0
+
+UPcurrPos:		dword 0	
+UPfromLeft:		dword 0
+UPworkingVal:	dword 0			;working value

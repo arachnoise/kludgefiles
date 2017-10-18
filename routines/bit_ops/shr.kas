@@ -1,0 +1,80 @@
+	load	[var]
+	sto		[SHRworkingVal]
+	load	[toShift]
+	sto		[SHRshiftYet]
+	load	[jumpBase]
+	add		EndHere
+	sto		[SHRreturn]
+	jmp		ShiftRight
+
+EndHere:
+	sto		[shiftVar]
+	halt
+	
+	var:			dword	0xC84500	;var
+	shiftVar:		dword	0			;shiftVar
+	toShift:		dword	1			;toShift
+	jumpBase:		dword	0x04200000	;jumpBase
+	
+ShiftRight:
+	load	0
+	sto		[SHRuCount]
+	sto		[SHRshiftCount]
+	sto		[SHRresult]
+	
+	load	32
+SHRLoop:
+	add		-1
+	sto		[SHRfromLeft]		
+	load	[SHRworkingVal]	
+	shl		[SHRfromLeft]		;test lowest bit
+	jnz		SHRBitSet
+	
+	load	[SHRshiftYet]
+	jnz		SHRNotReady
+	jmp		SHRReady
+	
+SHRBitSet:
+	load	-1
+	shl		[SHRuCount]			;clear bit
+	add		[SHRworkingVal]
+	sto		[SHRworkingVal]
+
+	load	[SHRshiftYet]		;are we ready to write yet?
+	jnz		SHRNotReady
+	
+SHRShiftBit:
+	load	1					;send bit to SHRresult
+	shl		[SHRshiftCount]
+	add		[SHRresult]
+	sto		[SHRresult]
+	jmp		SHRReady
+
+SHRNotReady:
+	add		-1
+	sto		[SHRshiftYet]
+	jmp		SHRLoopEnd
+
+SHRReady:
+	load	[SHRshiftCount]		;update shiftCount
+	add		1
+	sto		[SHRshiftCount]
+	
+SHRLoopEnd:
+	load	[SHRuCount]
+	add		1
+	sto		[SHRuCount]
+	load	[SHRfromLeft]
+	jnz		SHRLoop
+	
+	load	[SHRresult]
+	
+SHRreturn:		dword	0		;SHRreturn
+
+SHRshiftYet:	dword	0		;SHRshiftYet
+SHRworkingVal:	dword	0		;SHRworkingVal
+
+SHRfromLeft:	dword	32		;SHRfromLeft
+SHRresult:		dword	0		;SHRresult
+SHRshiftCount:	dword	0		;SHRshiftCount
+SHRuCount:		dword	0		;SHRuCount

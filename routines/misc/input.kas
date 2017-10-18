@@ -1,0 +1,13 @@
+
+inputLoop:
+
+	in		0
+	sto		[input]
+	out		0
+	add		enter
+	jnz		inputLoop
+	
+	halt
+
+enter:		equ		-13
+input:		dword 	0			;input

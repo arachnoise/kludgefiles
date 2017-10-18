@@ -1,0 +1,473 @@
+
+
+
+;general purpose variables
+
+jumpCode:	dword 0x04200000	;jump instruction code
+packedVal1:	dword 0x0005		;packed Value 1
+packedVal2:	dword 0x0007		;packed Value 2
+divResult:	dword 0				;division result
+valLength:	dword 32
+
+unpacked1:	dword 0, 0, 0, 0, 0, 0, 0, 0
+			dword 0, 0, 0, 0, 0, 0, 0, 0
+			dword 0, 0, 0, 0, 0, 0, 0, 0
+			dword 0, 0, 0, 0, 0, 0, 0, 0
+			
+unpacked2:	dword 0, 0, 0, 0, 0, 0, 0, 0
+			dword 0, 0, 0, 0, 0, 0, 0, 0
+			dword 0, 0, 0, 0, 0, 0, 0, 0
+			dword 0, 0, 0, 0, 0, 0, 0, 0
+			
+
+
+	; for now it would probably be good to return the result as a regular integer
+	
+UnpackedDivide:
+		
+	load	0
+	sto		[divisorStPos]
+	sto		[dividendStPos]
+	sto		[reverseSign]
+	
+		; is divisor negative? If true, make positive and flip reverse sign status
+		; is dividend negative? If true, make positive and flip reverse sign status
+		; do it (I'll get around to it)
+	
+	load	[[divisor]]
+	jnz		SetDivisorStLoop
+	jmp		PostSetDivisorSt
+	
+SetDivisorStLoop:
+	
+	load	[divisorStPos]
+	add		1
+	sto		[divisorStPos]
+	
+	load	[divisor]
+	add		1
+	sto		[divisor]
+	
+	load 	[[divisor]]
+	jnz		SetDivisorStLoop
+
+PostSetDivisorSt:
+
+	load	[[dividend]]
+	jnz		SetDividendStLoop
+	jmp		PostSetDividendSt
+	
+SetDividendStLoop:
+
+	load	[dividendStPos]
+	add		1
+	sto		[dividendStPos]
+	
+	load	[dividend]				;negative value simplifies subtraction later on
+	add		-1
+	sto		[dividend]
+	
+	load	[[dividend]]
+	jnz		SetDividendStLoop
+	
+PostSetDividendSt:
+
+		; If the dividend start position is greater than the divisor start position, then the divisor is clearly larger. 
+		; If this is the case, the division result is 0. Return to calling routine.
+	
+	load	[dividendStPos]				; divisor start - dividend start > 0 ?
+	add		[divisorStPos]
+	sto		[opCounter]
+	
+	sto		[NTtoTest]
+	
+	load	[jumpCode]
+	add		CheckResult
+	sto		[NTretCode]
+	
+	jmp		NegTest
+
+CheckResult:
+	
+		;if there's nothing to operate on then return
+		
+	jnz		retCode
+	
+		; if we're here the result must have been positive. Keep going!	
+		; division window size = argument length - position of first non-zero bit in divisor
+
+	load	[argLength]
+	add		[divisorStPos]
+	sto		[divWinSize]	
+	
+DivisionLoop:
+
+
+	load	[dividend]
+	sto		[USUPCMParg1Base]
+		
+	load	[divisor]
+	sto		[USUPCMParg2Base]
+	
+	load	[divWinSize]
+	sto		[USUPCMPargLen]
+		
+	load	[jumpCode]
+	add		PostCmp
+	sto		[USUPCMPretCode]
+
+	jmp		UnsignedUPCMP
+	
+PostCmp:
+
+		;	is the value in window greater than the divisor?
+
+	add		1
+	jnz		Subtract
+	jmp		ContLoop
+
+Subtract:
+
+		;	if yes then
+		;		subtract divisor from dividend in window
+		;		add 1 to quotient
+		
+	load	[quotient]
+	add		1
+	sto		[quotient]
+	
+	load	[dividend]
+	sto		[UPSubMinuend]
+	
+	load	[divisor]
+	sto		[UPSubSubtrahend]
+	
+	load	[dividend]
+	sto		[UPSubResult]
+	
+	load	[divWinSize]
+	sto		[UPSubBitsToSub]
+	
+	load	[jumpCode]
+	add		ContLoop
+	sto		[UPSubRetCode]
+
+ContLoop:
+		
+		;	shift result left by one bit
+		
+	load	[quotient]
+	shl		1
+	sto		[quotient]
+	
+		;	slide the window one bit to the right
+		;	update pointers
+		
+	load	[dividend]
+	add		1
+	sto		[dividend]
+
+	load	[divisor]
+	add		1
+	sto		[divisor]
+
+	;	THERE'S A PROBLEM WITH YOUR DIV WINDOW SETTINGS
+	;	YOU NEED TO FIGURE IT OUT
+	
+;function parameters
+
+divisor:		dword 0		; in pointer
+dividend:	 	dword 0		; in pointer
+quotient:		dword 0		; out
+argLength:		dword 0		; in
+retCode:		dword 0		; in
+
+reverseSign:	dword 0
+
+opCounter:		dword 0
+
+divisorStPos:	dword 0		; negative value index
+dividendStPos:	dword 0
+divWinSize:		dword 0
+
+divisorItr:		dword 0
+dividendItr:	dword 0
+
+NegTest:	
+	load	31
+	sto		[NTfromLeft]
+	load	0
+	sto		[NTfromRight]
+	
+NTStart:
+	load	[NTtoTest]
+	shl		[NTfromLeft]		;shl
+	jnz		NTBitSet
+	
+NTBitUnset:
+	jmp		NTEnd
+	
+NTBitSet:
+	load	-1
+	shl		[NTfromRight]
+	add		[NTtoTest]
+	sto		[NTtoTest]
+
+NTEnd:
+	load	[NTfromRight]
+	add		1
+	sto		[NTfromRight]
+	load	[NTfromLeft]
+	add		-1
+	sto		[NTfromLeft]
+	jnz		NTStart
+	
+	load	[NTtoTest]
+	jmp		NTretCode
+	
+NTfromLeft:		dword	0		;position relative to HO bit
+NTfromRight:	dword	0		;position relative to LO bit
+NTtoTest:		dword	0		;NTtoTest
+NTretCode:		dword	0		;NTtoReturn
+
+; caller: remember to pass parameters to this routine -_-
+;
+UPSubtract: 
+
+	load	0
+	sto		[UPSubCarryBit]			; zero out carry bit
+
+	load	[UPSubBitsToSub]		; return if no bits to add
+	jnz		UPSubLoop
+	jmp		UPSubRetCode
+	
+UPSubLoop:
+
+	add		-1
+	sto		[UPSubBitsToSub]		;	decrement bit counter
+
+	load	0						;	zero out table index
+	sto		[UPSubTableIndex]
+
+	load	[[UPSubMinuend]]
+	jnz		UPSubSet1				;		if minuend is 1 then
+	jmp		UPSubUnset1				;			add 4 to table index
+	
+UPSubSet1:
+
+	load	[UPSubTableIndex]
+	add		4
+	sto		[UPSubTableIndex]
+
+UPSubUnset1:
+
+	load	[[UPSubSubtrahend]]
+	jnz		UPSubSet2				;		if subtrahend is 1 then
+	jmp		UPSubUnset2				;			add 2 to table index
+	
+UPSubSet2:
+
+	load	[UPSubTableIndex]
+	add		2
+	sto		[UPSubTableIndex]
+	
+UPSubUnset2:
+
+	load	[UPSubCarryBit]
+	jnz		UPSubCarrySet			;		if carry bit is 1 then
+	jmp		UPSubCarryUnset			;			add 1 to table index
+	
+UPSubCarrySet:
+
+	load	[UPSubTableIndex]
+	add		1
+	sto		[UPSubTableIndex]
+	
+UPSubCarryUnset:
+
+	lir		[UPSubTableIndex]
+	
+	load	[UPSubResultTable+i]	;		look up result table[table index]
+	sto		[[UPSubResult]]			;		assign to result
+	
+	load	[UPSubCarryTable+i]		;		look up carry table[table index]
+	sto		[UPSubCarryBit]			;		assign to carry bit
+
+	load	[UPSubMinuend]			;		update pointer to minuend
+	add		1
+	sto		[UPSubMinuend]
+	
+	load	[UPSubSubtrahend]		;		update pointer to subtrahend
+	add		1
+	sto		[UPSubSubtrahend]
+	
+	load 	[UPSubResult]			;		update pointer to result
+	add		1
+	sto		[UPSubResult]
+	
+	load	[UPSubBitsToSub]
+	jnz		UPSubLoop
+	
+	jmp		UPSubRetCode
+
+; unpackAdd parameters
+
+UPSubMinuend:		dword 0			; in - pointer to minuend
+UPSubSubtrahend:	dword 0			; in - pointer to subtrahend
+UPSubResult:		dword 0			; out - pointer to result
+UPSubBitsToSub:		dword 0			; in
+UPSubRetCode:		dword 0			; in
+
+; unpackSub variables 
+
+UPSubCarryBit:		dword 0
+UPSubTableIndex:	dword 0
+UPSubResultTable:	dword 0, 1, 1, 0, 1, 0, 0, 1		;consult truth table above for details
+UPSubCarryTable:	dword 0, 1, 1, 1, 0, 0, 0, 1
+
+; returns 1 if first argument is greater
+; returns 0 if arguments are equal
+; returns -1 if second argument is greater
+UnsignedUPCMP:
+
+	load	0						; clean up (possibly) dirty variables
+	sto		[USUPCMPresult]
+	
+	load	[USUPCMPargLen]			; prepare for sign test
+	add		-1						; set current bit to highest (sign) bit position
+	sto		[USUPCMPcurrentBit]
+	
+	load	[USUPCMParg1Base]			; set pointers
+	add		[USUPCMPcurrentBit]		
+	sto		[USUPCMParg1Curr]
+	
+	load	[USUPCMParg2Base]
+	add		[USUPCMPcurrentBit]
+	sto		[USUPCMParg2Curr]
+	
+USUPCMPLoopPreCond:
+									;		start evaluation		
+	load	[USUPCMPcurrentBit]
+	jnz		USUPCMPEvalLoop
+	
+		;if there are no bits to test then return 0
+	
+	load	0
+	jmp		USUPCMPretCode
+	
+USUPCMPEvalLoop:
+	
+	add		-1	
+	sto		[USUPCMPcurrentBit]
+	
+	load	[USUPCMParg1Curr]	
+	add		-1
+	sto		[USUPCMParg1Curr]
+	
+	load	[USUPCMParg2Curr]
+	add		-1
+	sto		[USUPCMParg2Curr]
+	
+		;cases to test: 1-1 1-0 0-1 0-0
+
+	load	[[USUPCMParg1Curr]]		; test arg 1 bit
+	jnz		USUPCMPArg1Set			; if 0 then
+
+	load	[[USUPCMParg2Curr]]		;	test arg 2 bit
+	jnz		USUPCMPArg1Less
+									;	if 0 then it's case 0-0
+	jmp		USUPCMPLoopCond			;		continue loop
+	
+USUPCMPArg1Less:	
+					
+	load	-1						;	if 1 then it's case 0-1
+	sto		[USUPCMPresult]			;		result is -1
+	jmp		USUPCMPPostLoop			;		break
+	
+USUPCMPArg1Set:
+									; if 1 then
+	load	[[USUPCMParg2Curr]]		;	test arg 2 bit
+	jnz		USUPCMPLoopCond			;	if 1 then it's case 1-1
+									;		continue loop
+	load	1						;	if 0 then it's case 1-0
+	sto		[USUPCMPresult]			;		result is 1
+	jmp		USUPCMPPostLoop			;		break
+
+USUPCMPLoopCond:
+
+	load	[USUPCMPcurrentBit]
+	jnz		USUPCMPEvalLoop
+
+USUPCMPPostLoop:
+	
+	load	[USUPCMPresult]
+	jmp		USUPCMPretCode			;	return result
+
+;unpackCmp parameters
+
+USUPCMParg1Base:		dword 0		; reference to first argument
+USUPCMParg2Base:		dword 0		; reference to second argument
+USUPCMPargLen:			dword 0		; length of arguments
+USUPCMPretCode:			dword 0		; return address and instruction
+
+;unpackCmp variables
+
+USUPCMParg1Curr:		dword 0		; pointer to current position in argument 1
+USUPCMParg2Curr:		dword 0		; pointer to current position in argument 2
+USUPCMPcurrentBit:		dword 0		; index of current bit in argument
+USUPCMPresult:			dword 0		; result to return to caller
+
+;this version of unpack depends on the calling routine to
+;	pass parameters.
+;
+Unpack:
+	
+	load	0
+	sto		[UPcurrPos]
+	
+	load	32				;number of bits in an addressed value
+	
+UnpackLoop:
+	add		-1
+	sto		[UPfromLeft]	;update distance from big (left) end of value
+
+	load	[UPtoUnpack]	;get bit
+	shl		[UPfromLeft]
+
+	jnz		UnpackBitIsSet
+
+UnpackBitNotSet:
+	load	0				;store bit in accumulator
+	jmp		UnpackEnd
+	
+UnpackBitIsSet:
+	load	-1
+	shl		[UPcurrPos]		;if set - clear this bit
+	add		[UPtoUnpack]
+	sto		[UPtoUnpack]
+	
+	load	1				;store bit in accumulator
+
+UnpackEnd:
+	sto		[[UPunpacked]]	;store in unpacked value
+	
+	load	[UPunpacked]	;increment pointer address
+	add		1
+	sto		[UPunpacked]	
+	
+	load	[UPcurrPos]		;update current position
+	add		1
+	sto		[UPcurrPos]			
+	
+	load	[UPfromLeft]	;if more bits to shift
+	jnz		UnpackLoop		;end of loop
+	
+	jmp		UPretCode
+	
+;unpack Variables	
+
+UPcurrPos: 		dword 0	
+UPfromLeft:		dword 0
+UPtoUnpack:		dword 0		;value to unpack
+UPunpacked:		dword 0		;pointer to unpacked Value
+UPretCode:		dword 0		;return to specified address

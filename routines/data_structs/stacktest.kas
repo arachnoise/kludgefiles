@@ -1,0 +1,42 @@
+;stack demonstration
+
+	load	[toAdd]				;load value
+	sto		[[stackPtr]]		;push onto stack
+	load	[times]
+	
+push:
+	add		-1					;decrement loop counter
+	sto		[temp]
+	load	[[stackPtr]]		;load value
+	add		1
+	sto		[inc]				;store as increment
+	load	[stackPtr]			;increment stack pointer
+	add		-1
+	sto		[stackPtr]
+	load	[inc]				;get increment
+	sto		[[stackPtr]]		;push onto stack
+	load	[temp]
+	jnz		push
+	
+	load	[times]
+	
+pop:
+	add		-1
+	sto		[temp]
+	load	[[stackPtr]]		;fetch stack top
+	add		[result]			
+	sto		[result]			;add to final count
+	load	[stackPtr]			;decrement stack pointer
+	add		1
+	sto		[stackPtr]
+	load	[temp]
+	jnz		pop
+
+	halt
+	
+stackPtr:	dword 	0x0000FFFF	;stack pointer
+result:		dword	0			;result
+toAdd:		dword	5
+times:		dword	20
+temp:		dword	0
+inc:		dword	0

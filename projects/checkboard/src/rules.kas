@@ -1,0 +1,16 @@
+;rules.kas
+
+;rules of checkers implementation
+;
+;Movement:
+;
+;regular pieces move diagonally down the board
+;kings are allowed to move backwards as well
+;upon reaching the back rank pieces can get promoted to be kings
+;player may not move a piece directly into another piece
+;instead a player may jump a piece over the other by placing it one square
+;past the piece along a line.
+;player may jump multiple times using a single piece
+;
+;The object of the game is to capture or block all of the opposing side's pieces
+;

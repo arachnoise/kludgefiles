@@ -1,0 +1,41 @@
+	load	[testVal]
+	sto		[NTtoTest]
+	
+NegTest:	
+	load	31
+	sto		[NTfromLeft]
+	load	0
+	sto		[NTfromRight]
+	
+NTStart:
+	load	[NTtoTest]
+	shl		[NTfromLeft]		;shl
+	jnz		NTBitSet
+	
+NTBitUnset:
+	jmp		NTEnd
+	
+NTBitSet:
+	load	-1
+	shl		[NTfromRight]
+	add		[NTtoTest]
+	sto		[NTtoTest]
+
+NTEnd:
+	load	[NTfromRight]
+	add		1
+	sto		[NTfromRight]
+	load	[NTfromLeft]
+	add		-1
+	sto		[NTfromLeft]
+	jnz		NTStart
+	
+	load	[NTtoTest]
+	jmp		NTretCode
+	
+NTfromLeft:		dword	0			;position relative to HO bit
+NTfromRight:	dword	0			;position relative to LO bit
+NTtoTest:		dword	0			;NTtoTest
+NTretCode:		dword	0x08000000	;NTtoReturn
+
+testVal:		dword	-1

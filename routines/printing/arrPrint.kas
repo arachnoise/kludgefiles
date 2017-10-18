@@ -1,0 +1,70 @@
+;array writer and tester
+
+	load	newline
+	shl		24
+	out		0
+	
+	load	[rowInd]
+
+outerLoop:
+	sto		[rowInd]
+	load	[colSize]
+	
+	innerLoop:
+		sto		[colInd]
+		lir		[index]
+		
+		load	space
+		shl		24
+		out		0
+		
+		load	[array+i]
+		jnz		printChar
+		
+		load	space
+		shl		24
+		out		0
+		jmp		nonPrintable
+		
+	printChar:
+		shl		24
+		out		0
+		
+	nonPrintable:
+		load	space
+		shl		24
+		out		0
+		
+		load	[index]
+		add		1
+		sto		[index]
+		
+		load	[colInd]
+		add		-1
+		jnz		innerLoop
+	
+	load	newline
+	shl		24
+	out		0
+	
+	load	[rowInd]
+	add		-1
+	jnz		outerLoop
+	
+	in		0
+	halt
+
+newline:	equ		10
+space:		equ		32
+array:	dword	46, 46, 0,  46, 46, 46, 46, 46
+		dword	88, 46, 46, 46, 46, 46, 89, 46
+		dword	46, 46, 46, 46, 46, 88, 46, 46
+		dword	46, 46, 46, 46, 46, 46, 46, 46
+		dword	46, 46, 46, 46, 46, 46, 46, 46
+		dword	46, 46, 46, 88, 46, 46, 46, 46
+		dword	46, 46, 46, 46, 46, 46, 46, 46
+		dword	46, 46, 46, 46, 46, 46, 46, 0
+rowInd:		dword	8
+colInd:		dword	8
+colSize:	dword	8
+index:		dword	0

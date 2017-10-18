@@ -1,0 +1,78 @@
+0	01400079				Load contents of cell 7A aka N[0] into AC
+1	07200003				Left shift bits in AC 3 times (multiply by 8)
+2	0280007D				Store contents of AC in P[0]
+3	01200000				Load 0 into AC
+4	03200001				Load 1 into IR
+5	0280007D				Set P[1] to 0
+6	01000079				Load pointer address into AC
+7	06200001				Add 1 to the pointer reference
+8	02000079				Store new value in the pointer
+9	01400079				Load the data from N[1]into AC
+A	02000077				set loop counter = N[1]
+
+B	01000077	Base 1: 	fetch counter
+C	05000015				jump to loop 2 if counter > 0
+
+D	06200001	Base 2: 	pos/neg test -- add 1 to counter
+E	0500001B				jump to end if counter > 0
+
+F	02000077	Loop 1: 	neg loop -- save counter
+10	0180007D				Fetch P[1] (indexed)
+11	06200001				Add 1
+12	0280007D				Save value
+13	01000077				Fetch counter
+14	0420000D				jump to base 2 (head of loop 1)
+
+15	0620FFFF	Loop 2: 	pos loop -- add -1 to counter
+16	02000077				Save value
+17	0180007D				Fetch P[1]
+18	0620FFFF				Add -1 to P[1]
+19	0280007D				Save value
+1A	0420000B				jump to base 1 (head of loop 2)
+1B	03200002				End of loop: Put 2 in IR
+1C	01000079				Get pointer to N array
+1D	06200001				Add 1 to reference address
+1E	02000079				Store new value
+1F	01400079				Fetch N[2]
+20	07200001				Left shift once (mult 2)
+21	06400079				Add N[2] to value for result
+22	0280007D				save P[2] = 3 * N[2] 
+23	01200003				put 3 in AC
+24	02000077				set loop counter to 3
+25	05200027 				Head of loop: if count > 0 go to Loop
+26	0420002F				else go to End of loop
+
+27	0620FFFF	Loop: 		Add -1 to counter
+28	02000077				Save it
+29	03000077				Set contents of IR equal to counter
+2A	01000078				Fetch sum
+2B	0680007D				Add P[count] to sum
+2C	02000078				Save the value
+2D	01000077				Fetch loop counter
+2E	04200025				Go to Head of loop
+
+2F	0120007A	End of loop:load 7A into AC
+30	02000079				pointer now points to N[0]
+31	02000076				store in pointer 2
+32	01400079				Fetch N[0]
+33	02000077				Store in temp
+34	0120007C				Put 7A in AC
+35	02000079				Pointer points to N[2]
+36	01400079				Fetch N[2] via pointer
+37	02400076				Store N[2] in N[0]
+38	01000077				Load temp
+39	02400079				Store in N[2]
+3A	08000000				Halt machine
+
+76	00000000				pointer 2 to N array
+77	00000000				loop counter also temp variable
+78	00000000				Sum 
+79	0000007A				pointer to N array
+7A	00000007				This spaec reserved for array N
+7B	00000004				N[1]
+7C	FFFFFFFA				N[2]
+7D	FFFFFFFF				This spaec reserved for array P
+7E	FFFFFFFF				P[1]
+7F	FFFFFFFF				P[2]
+99999
+78 7A 7B 7C 7D 7E 7F

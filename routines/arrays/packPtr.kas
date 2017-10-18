@@ -1,0 +1,64 @@
+
+;	pack.kas
+;
+;	creates an integer value from an array of bits
+;
+;	pseudocode:
+;
+;	while index is less than number of bits to get
+;		at array position[index] get bit
+;		shift left 1 to the value of index
+;		add to value so far
+;		increment index
+;
+
+	load	buffer
+	sto		[PKptrUnpacked]
+	load	EndHere
+	add		[jumpBase]
+	sto		[PKreturn]
+	jmp		Pack
+	
+EndHere:
+	load	[PKpackedVal]
+	sto		[myValue]
+	halt
+	
+jumpBase:	dword	0x04200000
+myValue:	dword	0					;my Value
+buffer:		dword	0, 0, 0, 1, 0, 0, 1, 0
+			dword	1, 0, 0, 0, 0, 0, 0, 0
+			dword	0, 0, 0, 0, 0, 0, 0, 0
+			dword	0, 0, 0, 0, 0, 0, 0, 0
+Pack:
+	load	0
+	sto		[PKcurrPos]
+	sto		[PKpackedVal]
+	
+PKLoop:
+	load	[[PKptrUnpacked]]	;retrieve bit at indexed location
+	shl		[PKcurrPos]			;shift to its proper position
+	add		[PKpackedVal]		;pack into the result
+	sto		[PKpackedVal]		;and save it
+	
+	load	[PKptrUnpacked]
+	add		1
+	sto		[PKptrUnpacked]
+	
+	load	[PKcurrPos]
+	add		1
+	sto		[PKcurrPos]			;update position
+	
+	add		[PKlimit]				;is PKcurrPos less than 32 (PKlimit)?
+	jnz		PKLoop
+
+	;return address
+PKreturn:		dword	0
+
+	;parameters
+PKpackedVal:	dword	0
+PKptrUnpacked:	dword 0
+
+PKcurrPos:		dword	0
+PKlimit:		dword	-32		;PKlimit
+

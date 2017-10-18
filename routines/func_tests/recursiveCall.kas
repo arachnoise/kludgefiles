@@ -1,0 +1,100 @@
+;recursive call test
+;computes n+n-1+n-2+...3+2+1
+;
+;Stack frame for nAdd
+;	return address	0
+;	return value	1
+;   parameter		2
+
+	load	eFirstCall			;load	eFirstCall			
+	sto		[[stackPtr]]		;store return address for addN
+	
+	load	[stackPtr]			;load [stackPtr]
+	add		2					;add 2
+	sto		[tempStPtr1]		;N parm is at stackPtr + 2
+	load	[N]
+	sto		[[tempStPtr1]]		;store n in stack frame
+	
+	jmp		nAdd
+
+eFirstCall:
+	load	[stackPtr]			;load	[stackPtr]
+	add		1					;add		1
+	sto		[tempStPtr1]		;sto [tempStPtr1]
+	load	[[tempStPtr1]]		;fetch return value
+	sto		[result]			;sto	[result]
+	
+	halt						;halt
+	
+nAdd:
+	load	[stackPtr]			;n is at stackPtr + 2
+	add		2
+	sto		[tempStPtr1]
+	load	[[tempStPtr1]]		;load n
+	add		-1					
+	jnz		nAddrecCase			;if n > 1 goto recCase
+
+nAddtermCase:
+	load	[stackPtr]			;retval is at stackPtr + 1
+	add		1
+	sto		[tempStPtr1]
+	load	1
+	sto		[[tempStPtr1]]		;retval = 1
+	jmp		end
+	
+nAddrecCase:	
+	load	[stackPtr]
+	add		3					;3 is size of stack frame
+	sto		[stackPtr]			;push stack frame
+	
+	load	nAddretPost			;load return address
+	sto		[[stackPtr]]		;stackPtr = return address
+	
+	load	[stackPtr]			;old n is at stackPtr - 1
+	add		-1
+	sto		[tempStPtr1]
+	load	[stackPtr]			;n is at stackPtr + 2
+	add		2
+	sto		[tempStPtr2]
+	load	[[tempStPtr1]]		;load old n
+	add		-1
+	sto		[[tempStPtr2]]		;n = oldn - 1
+	
+	jmp		nAdd
+
+nAddretPost:
+	load	[stackPtr]
+	add		-3					;3 is size of stack frame
+	sto		[stackPtr]			;pop stack frame
+	
+	load	[stackPtr]			;n is at stackPtr + 2
+	add		2
+	sto		[tempStPtr1]
+	load	[stackPtr]			;retval is at stackPtr + 1
+	add		1
+	sto		[tempStPtr2]
+	
+	load	[[tempStPtr1]]		;load n
+	sto		[[tempStPtr2]]		;retval = n
+	
+	load	[stackPtr]			;oldretval is at stackPtr + 4
+	add		4
+	sto		[tempStPtr1]
+	
+	load	[[tempStPtr1]]		;load old retval
+	add		[[tempStPtr2]]
+	sto		[[tempStPtr2]]		;retval = n + oldretval
+	
+end:
+	load	[[stackPtr]]		;load return address
+	add		[baseJmp]			;add jmp opcode
+	sto		[tramp]				;store at trampoline
+	jmp		tramp				;jump to trampoline
+
+N:			dword	2			;N
+result:		dword	0			;result
+tempStPtr1:	dword	0			;tempStPtr1
+tempStPtr2:	dword	0			;tempStPtr2
+stackPtr:	dword	0xF000		;stackPtr
+tramp:		dword	0			;trampoline
+baseJmp:	dword	0x04200000	;jump opcode

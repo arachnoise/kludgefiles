@@ -1,0 +1,90 @@
+; unpackParm.kas
+;
+; Uses function parameters
+; unpacks a value into an array bit by bit
+;
+; pseudocode
+;
+; 		get bit i: shift value by distance from left side
+;			send bit to array i
+;
+
+;main routine
+	
+	load	[packedVal]			;parameter prep for routine Unpack
+	sto		[UPtoUnpack]
+	load	unpacked
+	sto		[UPunpacked]
+	load	[jumpCode]
+	add		finish
+	sto		[UPretCode]
+	
+	jmp		Unpack
+	
+finish:
+
+	halt
+	
+;general purpose variables
+
+jumpCode:	dword 0x04200000	;jump instruction code
+packedVal:	dword 0x0005		;packed Value
+unpacked:	dword 0, 0, 0, 0, 0, 0, 0, 0
+			dword 0, 0, 0, 0, 0, 0, 0, 0
+			dword 0, 0, 0, 0, 0, 0, 0, 0
+			dword 0, 0, 0, 0, 0, 0, 0, 0
+			
+;this version of unpack depends on the calling routine to
+;	pass parameters.
+;
+Unpack:
+	
+	load	0
+	sto		[UPcurrPos]
+	
+	load	32				;number of bits in an addressed value
+	
+UnpackLoop:
+	add		-1
+	sto		[UPfromLeft]	;update distance from big (left) end of value
+
+	load	[UPtoUnpack]	;get bit
+	shl		[UPfromLeft]
+
+	jnz		UnpackBitIsSet
+
+UnpackBitNotSet:
+	load	0				;store bit in accumulator
+	jmp		UnpackLoopEnd
+	
+UnpackBitIsSet:
+	load	-1
+	shl		[UPcurrPos]		;if set - clear this bit
+	add		[UPtoUnpack]
+	sto		[UPtoUnpack]
+	
+	load	1				;store bit in accumulator
+
+UnpackLoopEnd:
+	sto		[[UPunpacked]]	;store in unpacked value
+	
+	load	[UPunpacked]	;increment pointer address
+	add		1
+	sto		[UPunpacked]	
+	
+	load	[UPcurrPos]		;update current position
+	add		1
+	sto		[UPcurrPos]			
+	
+	load	[UPfromLeft]	;if more bits to shift
+	jnz		UnpackLoop		;end of loop
+	
+	jmp		UPretCode
+	
+;unpack Variables	
+
+UPcurrPos: 		dword 0	
+UPfromLeft:		dword 0
+UPtoUnpack:		dword 0		;value to unpack
+UPunpacked:		dword 0		;pointer to unpacked Value
+UPretCode:		dword 0		;return to specified address

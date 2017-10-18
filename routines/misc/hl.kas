@@ -1,0 +1,111 @@
+HighlightSquare:
+	load	escape
+	shl		8
+	add		lBracket
+	sto		[HSmoveString]
+	
+	load	[cursorY]			;prep cursor data
+	shl		1
+	add		[boardStartY]
+	sto		[HSsquareY]
+	sto		[HStestY]
+	
+	load	[cursorX]
+	shl		2
+	add		[boardStartX]
+	sto		[HSsquareX]
+	
+	load 	zero
+	sto		[HScoord1]
+	sto		[HScoord2]
+	
+	HSCoordY:
+		load	[HScoord2]
+		add		1
+		sto		[HScoord2]
+		add		-58
+		jnz		HSCoordYSec
+		
+		load	[HScoord1]
+		add		1
+		sto		[HScoord1]
+		load	zero
+		sto		[HScoord2]
+
+	HSCoordYSec:
+		load	[HSsquareY]
+		add		-1
+		sto		[HSsquareY]
+		jnz		HSCoordY
+
+	load	[HSmoveString]
+	shl		8
+	add		[HScoord1]
+	shl		8
+	add		[HScoord2]
+	sto		[HSmoveString]
+	load	semicolon
+	sto		[HSmoveString+1]
+	
+	load 	zero
+	sto		[HScoord1]
+	sto		[HScoord2]
+	
+	HSCoordX:
+		load	[HScoord2]
+		add		1
+		sto		[HScoord2]
+		add		-58
+		jnz		HSCoordXSec
+		
+		load	[HScoord1]
+		add		1
+		sto		[HScoord1]
+		load	zero
+		sto		[HScoord2]
+
+	HSCoordXSec:
+		load	[HSsquareX]
+		add		-1
+		sto		[HSsquareX]
+		jnz		HSCoordX
+
+	load	[HSmoveString+1]
+	shl		8
+	add		[HScoord1]
+	shl		8
+	add		[HScoord2]
+	shl		8
+	add		emm
+	sto		[HSmoveString+1]
+	halt
+	
+;access this data outside the function
+HSsquareY:	dword	0		;HSsquareY
+HStestY:	dword	0		;HStestY
+HSsquareX:	dword	0		;HSsquareX
+HSreturn:	dword	0
+
+;function access only do not tamper
+HScoord1:	dword	0		;HScoord1
+HScoord2:	dword	0		;HScoord2
+HSmoveString: dword 0		;HSmoveString
+			dword	0
+			dword	0
+HStemp:		dword	0
+			
+;
+;data section
+;
+escape:			equ		27
+lBracket:		equ		91
+newLine:		equ		13
+semicolon:		equ		59
+space:			equ		32
+zero:			equ		48
+emm:			equ		109
+
+boardStartY:	dword	2
+boardStartX:	dword	4
+cursorY:		dword	0		;cursorY
+cursorX:		dword	0		;cursorX

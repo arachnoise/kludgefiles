@@ -1,0 +1,58 @@
+	load	[value]
+	sto		[RBworkingVal]
+	load	[jumpBase]
+	add		PostCall1
+	sto		[RBreturn]
+	jmp		ReverseBits
+	
+PostCall1:
+	sto		[result]
+	halt
+
+value:		dword	0				;value
+result:		dword	0				;result
+jumpBase:	dword	0x04200000
+
+ReverseBits:
+	load	32
+	
+RBLoop:
+	add		-1
+	sto		[RBfromLeft]
+
+	load	[RBworkingVal]
+	shl		[RBfromLeft]
+	jnz		RBBitSet
+
+	load	[RBresult]
+	shl		1
+	jmp		RBLoopEnd
+	
+RBBitSet:
+	load	-1
+	shl		[RBfromRight]
+	add		[RBworkingVal]
+	sto		[RBworkingVal]
+	
+	load	[RBresult]
+	shl		1
+	add		1
+	
+RBLoopEnd:
+	sto		[RBresult]
+	
+	load	[RBfromRight]
+	add		1
+	sto		[RBfromRight]
+	
+	load	[RBfromLeft]
+	jnz		RBLoop
+	
+	load	[RBresult]
+	jmp		RBreturn
+	
+RBworkingVal:	dword	0
+RBresult:		dword	0
+RBfromLeft:		dword	0
+RBfromRight:	dword	0
+RBreturn:		dword	0

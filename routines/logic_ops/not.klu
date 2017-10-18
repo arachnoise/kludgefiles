@@ -1,0 +1,38 @@
+0000	01000104			load  toCheck
+0001	02000103			store temp
+
+0002	01000102	Base:	load  toShift
+0003	0620FFFF			add	  -1
+0004	02000102			store toShift
+0005	01000103			load  temp
+0006	07000102			shl   toShift
+0007	0500000D			jnz   Set
+
+0008	01200001	Unset:	load  1
+0009	07000100			shl   x
+000A	06000105			add  result
+000B	02000105			store result
+000C	04000011			jmp   Final
+
+000D	0120FFFF	Set:	load  -1
+000E	07000100			shl   x
+000F	06000103			add   temp
+0010	02000103			store temp
+
+0011	01000100	Final:	load  x
+0012	06200001			add   1
+0013	02000100			store x
+0014	01000102			load  toShift
+0015	05000002			jnz   Base
+
+0016	08000000			halt
+
+0100	00000000			x
+0101	FFFFFFFA			n	
+0102	00000020			toShift
+0103	00000000			temp
+0104	FF00FF00			toCheck
+0105	00000000			result
+
+99999
+0100	0102	0103	0104	0105

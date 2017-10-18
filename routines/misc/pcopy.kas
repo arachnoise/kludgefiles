@@ -1,0 +1,69 @@
+;upper address space copier
+;program copies part of itself to 0xF000
+;once done it jumps to the address and resumes execution
+
+	load	payload
+	sto		[neg]
+	sto		[temp]
+	load	[k]
+	
+negloop:
+	add		-1			;decrement
+	sto		[k]			;store again
+	load	[neg]		;load number to negate
+	shl		1			;shift left 1
+	add		[temp]		;add temp
+	sto		[neg]		;store neg
+	load	[k]			;load k again
+	jnz		negloop		;if k != 0 go to negloop
+	
+	load	[i]
+	
+copyInstr:
+	add		-1
+	sto		[i]
+	lir		[i]
+	load	[payload+i]
+	add		[neg]
+	add		[addr]
+	sto		[longjmp+i]
+	load	[i]
+	jnz		copyInstr
+	
+	load	6
+	sto		[i]
+	load	[j]
+	
+copyData:
+	add		-1
+	sto		[j]
+	lir		[j]
+	load	[data+i]		;load data[j]
+	lir		[i]
+	sto		[longjmp+i]		;sto at longjmp+i
+	load	[i]
+	add		-1
+	sto		[i]
+	load	[j]
+	jnz		copyData
+	
+	jmp		longjmp
+	
+payload:
+	load	[A]			;toCopy: load A
+	add		[B]
+	sto		[C]
+	halt
+
+longjmp:	equ 	0x0000F000
+
+data:	
+	A:		dword	42
+	B:		dword	6
+	C:		dword	0
+	neg:	dword	0
+	temp:	dword	0
+	k:		dword	31
+	i:		dword	4
+	j:		dword	3
+	addr:	dword	0x0000F000

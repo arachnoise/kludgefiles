@@ -1,0 +1,19 @@
+escape:			equ		27
+lBracket:		equ		91
+newLine:		equ		13
+semicolon:		equ		59
+space:			equ		32
+zero:			equ		48
+emm:			equ		109
+vertLine:		equ		0xBA
+URcorner:		equ		0xBB
+LRcorner:		equ		0xBC
+LLcorner:		equ		0xC8
+ULcorner:		equ		0xC9
+horzLine:		equ		0xCD
+halfTop:		equ		0xDF
+halfBottom:		equ		0xDC
+
+lowestBit:	equ		31
+lowestByte:	equ		24
+rowOffset:	equ		3

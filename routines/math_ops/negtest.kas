@@ -1,0 +1,54 @@
+;negtest.kas
+;tests to see if a number is negative
+;
+;toTest changes to 0 if positive
+;
+	load	[value]
+	sto		[NTtoTest]
+	load	[jumpBase]
+	add		postCall
+	sto		[NTreturn]
+	jmp		NegTest
+
+postCall:
+	halt
+
+NegTest:	
+	load	31
+	sto		[NTfromLeft]
+	load	0
+	sto		[NTfromRight]
+	
+NTLoop:
+	load	[NTtoTest]
+	shl		[NTfromLeft]		;shl
+	jnz		NTBitSet
+	
+NTBitUnset:
+	jmp		NTEnd
+	
+NTBitSet:
+	load	-1
+	shl		[NTfromRight]
+	add		[NTtoTest]
+	sto		[NTtoTest]
+
+NTEnd:
+	load	[NTfromRight]
+	add		1
+	sto		[NTfromRight]
+	load	[NTfromLeft]
+	add		-1
+	sto		[NTfromLeft]
+	jnz		NTLoop
+	
+	jmp		NTreturn
+	
+	
+NTfromLeft:		dword	0		;position relative to HO bit
+NTfromRight:	dword	0		;position relative to LO bit
+NTtoTest:		dword	0		;NTtoTest
+NTreturn:		dword	0		;NTtoReturn
+
+value:			dword	45		;value
+jumpBase:		dword	0x04200000

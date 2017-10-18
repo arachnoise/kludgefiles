@@ -1,0 +1,73 @@
+0000	01200008 		load  eFirstCall
+0001	02400042 		store  return  address  for  addN
+0002	01000042 		load  [stackPtr]
+0003	06200002 		add  2
+0004	02000040 		N  parm  is  at  stackPtr  +  2
+0005	0100003E
+0006	02400040 		store  n  in  stack  frame
+0007	0420000E
+0008	01000042 		load  [stackPtr]
+0009	06200001 		add  1
+000A	02000040 		sto  [tempStPtr1]
+000B	01400040 		fetch  return  value
+000C	0200003F 		sto  [result]
+000D	08000000 		halt
+000E	01000042 		n  is  at  stackPtr  +  2
+000F	06200002
+0010	02000040
+0011	01400040 		load  n
+0012	0620FFFF
+0013	0520001A 		if  n  >  1  goto  recCase
+0014	01000042 		retval  is  at  stackPtr  +  1
+0015	06200001
+0016	02000040
+0017	01200001
+0018	02400040 		retval  =  1
+0019	0420003A
+001A	01000042
+001B	06200003 		3  is  size  of  stack  frame
+001C	02000042 		push  stack  frame
+001D	01200029 		load  return  address
+001E	02400042 		stackPtr  =  return  address
+001F	01000042 		old  n  is  at  stackPtr  -  1
+0020	0620FFFF
+0021	02000040
+0022	01000042 		n  is  at  stackPtr  +  2
+0023	06200002
+0024	02000041
+0025	01400040 		load  old  n
+0026	0620FFFF
+0027	02400041 		n  =  oldn  -  1
+0028	0420000E
+0029	01000042
+002A	0620FFFD 		3  is  size  of  stack  frame
+002B	02000042 		pop  stack  frame
+002C	01000042 		n  is  at  stackPtr  +  2
+002D	06200002
+002E	02000040
+002F	01000042 		retval  is  at  stackPtr  +  1
+0030	06200001
+0031	02000041
+0032	01400040 		load  n
+0033	02400041 		retval  =  n
+0034	01000042 		oldretval  is  at  stackPtr  +  4
+0035	06200004
+0036	02000040
+0037	01400040 		load  old  retval
+0038	06400041
+0039	02400041 		retval  =  n  +  oldretval
+003A	01400042 		load  return  address
+003B	06000044 		add  jmp  opcode
+003C	02000043 		store  at  trampoline
+003D	04200043 		jump  to  trampoline
+
+003E	0000000A		N
+003F	00000000 		result
+0040	00000000 		tempStPtr1
+0041	00000000 		tempStPtr2
+0042	0000F000 		stackPtr
+0043	00000000 		trampoline
+0044	04200000 		jump  opcode
+
+99999
+003E 003F 0040 00441 0042 F000 F001 F002 F003 F004 F005 F006 F007 F008 FFFF

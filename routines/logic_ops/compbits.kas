@@ -1,0 +1,149 @@
+;comparing bits
+;
+;for each bit
+; A is 0 B is 0: 	0
+; A is 0 B is 1:	-1
+; A is 1 B is 0:	1
+; A is 1 B is 1:	0
+
+	load	[val1]
+	sto		[CMBa]
+	load	[val2]
+	sto		[CMBb]
+	load	[jumpBase]
+	add		PostCall1
+	sto		[CMBreturn]
+	jmp		CompareBits
+	
+PostCall1:
+	sto		[result]
+	halt
+	
+val1:		dword	24			;value 1
+val2:		dword	23			;value 2
+result:		dword	0			;result
+jumpBase:	dword	0x04200000
+
+CompareBits:
+	load	[CMBa]
+	sto		[RBworkingVal]
+	load	[jumpBase]
+	add		CMBRevA
+	sto		[RBreturn]
+	jmp		ReverseBits
+	
+CMBRevA:
+	sto		[CMBa]
+
+	load	[CMBb]
+	sto		[RBworkingVal]
+	load	[jumpBase]
+	add		CMBRevB
+	sto		[RBreturn]
+	jmp		ReverseBits
+	
+CMBRevB:
+	sto		[CMBb]
+	
+	load	0
+	sto		[CMBtoShift]
+	
+	load	32
+	
+CMBLoop:
+	add		-1
+	sto		[CMBfromLeft]
+	
+	load	[CMBa]
+	shl		[CMBfromLeft]
+	jnz		CMBIsSetA
+
+	load	[CMBb]				;A is 0
+	shl		[CMBfromLeft]
+	jnz		CMBIsGreaterB
+	
+	jmp		CMBLoopEnd			;A 0 - B 0
+
+CMBIsGreaterB:
+	load	-1					;A 0 - B -1
+	jmp		CMBreturn
+	
+CMBIsSetA:
+	load	-1
+	shl		[CMBtoShift]
+	add		[CMBa]
+	sto		[CMBa]
+	
+	load	[CMBb]
+	shl		[CMBfromLeft]
+	jnz		CMBIsSetB
+	
+	load	1					;A 1 - B 0
+	jmp		CMBreturn
+	
+CMBIsSetB:
+	load	-1
+	shl		[CMBtoShift]
+	add		[CMBb]
+	sto		[CMBb]
+	
+CMBLoopEnd:
+	load	[CMBtoShift]
+	add		1
+	sto		[CMBtoShift]
+
+	load	[CMBfromLeft]
+	jnz		CMBLoop
+	
+	load	0
+	jmp		CMBreturn
+	
+CMBa:			dword	0
+CMBb:			dword	0
+CMBfromLeft:	dword	0
+CMBtoShift:		dword	0
+CMBreturn:		dword	0
+
+ReverseBits:
+	load	32
+	
+RBLoop:
+	add		-1
+	sto		[RBfromLeft]
+
+	load	[RBworkingVal]
+	shl		[RBfromLeft]
+	jnz		RBBitSet
+
+	load	[RBresult]
+	shl		1
+	jmp		RBLoopEnd
+	
+RBBitSet:
+	load	-1
+	shl		[RBfromRight]
+	add		[RBworkingVal]
+	sto		[RBworkingVal]
+	
+	load	[RBresult]
+	shl		1
+	add		1
+	
+RBLoopEnd:
+	sto		[RBresult]
+	
+	load	[RBfromRight]
+	add		1
+	sto		[RBfromRight]
+	
+	load	[RBfromLeft]
+	jnz		RBLoop
+	
+	load	[RBresult]
+	jmp		RBreturn
+	
+RBworkingVal:	dword	0
+RBresult:		dword	0
+RBfromLeft:		dword	0
+RBfromRight:	dword	0
+RBreturn:		dword	0

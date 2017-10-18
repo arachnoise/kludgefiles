@@ -1,0 +1,45 @@
+;2call.kas
+;routine called twice from different addresses
+
+firstcall:
+	load	[A]					;load A
+	sto		[parm1]				;sto parm1
+	load	[B]					;load B
+	sto		[parm2]				;sto parm2
+	load	[jumpCode]			;load jump instruction code
+	add		secondcall			;add return address
+	sto		[tramp]				;sto trampoline
+	jmp		routine				;jump to routine
+	
+secondcall:
+	sto		[AB]				;store return value in AB
+	
+	load	[C]					;load C
+	sto		[parm1]				;sto parm1
+	load	[D]					;load D
+	sto		[parm2]				;sto parm2
+	load	[jumpCode]			;load jump instruction code
+	add		finish				;add return address
+	sto		[tramp]				;sto trampoline
+	jmp		routine				;jump to routine
+	
+finish:
+	sto		[CD]				;store return value in CD
+	halt
+	
+routine:
+	load [parm1]
+	add	 [parm2]
+	jmp	 tramp
+	
+	tramp:		dword	0			;bounce from here to intended address
+	jumpCode:	dword	0x04200000	;jump instruction for trampoline
+	parm1:		dword	0			;parm1
+	parm2:		dword	0			;parm2
+	A:			dword	5			;A
+	B:			dword	10			;B
+	C:			dword	15			;C
+	D:			dword	20			;D
+	AB:			dword	0			;A+B
+	CD:			dword	0			;C+D
+	

@@ -1,0 +1,120 @@
+;PrintString.kas
+;
+;prints a string
+;
+
+main:
+	load 	cls
+	sto		[PSstrPtr]
+	load	[jumpBase]
+	add		cleared
+	sto		[tramp]
+	jmp		PrintString
+	
+cleared:
+	load	prompt
+	sto		[PSstrPtr]
+	load	[jumpBase]
+	add		postPrompt
+	sto		[tramp]
+	jmp		PrintString
+	
+postPrompt:
+	load 	echoOff
+	sto		[PSstrPtr]
+	load	[jumpBase]
+	add		printEsc1
+	sto		[tramp]
+	jmp		PrintString
+	
+printEsc1:
+	in		0
+	load	echoOn
+	sto		[PSstrPtr]
+	load	[jumpBase]
+	add		printStr1
+	sto		[tramp]
+	jmp		PrintString
+	
+printStr1:
+	load	str1
+	sto 	[PSstrPtr]
+	load	[jumpBase]
+	add		postPrint1
+	sto		[tramp]
+	jmp		PrintString
+
+postPrint1:
+	load 	echoOff
+	sto		[PSstrPtr]
+	load	[jumpBase]
+	add		printEsc2
+	sto		[tramp]
+	jmp		PrintString
+	
+printEsc2:
+	in		0
+	load	echoOn
+	sto 	[PSstrPtr]
+	load	[jumpBase]
+	add		printStr2
+	sto		[tramp]
+	jmp		PrintString
+	
+printStr2:
+	load	str2
+	sto 	[PSstrPtr]
+	load	[jumpBase]
+	add		postPrint2
+	sto		[tramp]
+	jmp		PrintString
+	
+postPrint2:
+	load 	echoOff
+	sto		[PSstrPtr]
+	load	[jumpBase]
+	add		printEsc3
+	sto		[tramp]
+	jmp		PrintString
+	
+printEsc3:
+	in		0
+	halt
+
+;PrintString prints out a null-terminated string
+
+PrintString:
+
+	load [[PSstrPtr]]
+	
+PSBegin:
+	out		0					;print out 4 characters
+	shl		8
+	out		0
+	shl		8
+	out		0
+	shl		8
+	out		0
+		
+	load 	[PSstrPtr]			;load string pointer
+	add		1
+	sto		[PSstrPtr]			;go to next location in string
+	load	[[PSstrPtr]]		;load it into memory
+	jnz		PSBegin
+	jmp		tramp
+
+PSstrPtr: dword 0				;string pointer
+
+
+;string data
+
+prompt: dword "Press any key to continue execution: "
+str1: dword "This is a string.\n"		;String is here
+str2: dword "It was the best of times it was the worst of times\n"
+echoOff: dword "\033[8m"				;echo off escape sequence
+echoOn: dword "\033[0m"					;echo on escape sequence
+cls:	dword "\033[2J"					;clear screen escape sequence
+
+;control data
+jumpBase: dword 0x04200000		;jumpBase
+tramp:	dword 0					;trampoline

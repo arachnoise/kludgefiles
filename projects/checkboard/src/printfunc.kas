@@ -1,0 +1,602 @@
+drawBoard:
+	
+topBorder:
+	load	space
+	shl		lowestByte
+	out		0
+	out		0
+	load	ULcorner
+	shl		lowestByte	
+	out		0
+	
+	load	8
+	
+topBorderLoop:
+	sto		[i]
+	
+	load	horzLine
+	shl		lowestByte
+	out		0
+	out		0
+	out		0
+	out		0
+	load	[i]
+	add		-1
+	jnz		topBorderLoop
+
+	load	URcorner
+	shl		lowestByte
+	out		0
+	load	newLine
+	shl		lowestByte
+	out		0
+	
+	load	[boardSize]
+	sto		[i]
+	load	[lineTimes]
+	sto		[lineCount]
+	
+lineBegin:
+	load	[lineCount]
+	add		-1
+	sto		[lineCount]
+	load	[countTimes]
+	sto		[evenCount]
+	sto		[oddCount]
+	
+	load	[oddSet]
+	jnz		checkLine2
+
+checkLine1:
+	load	[lineCount]
+	jnz		preEven1
+	
+	load	1
+	sto		[oddSet]		;sto oddset
+	
+	load	[lineTimes]
+	sto		[lineCount]
+	
+	load	[masterCount]
+	add		zero
+	shl		lowestByte
+	out		0
+	
+	load	[masterCount]		;if lineCount is 0 update masterCount
+	add		-1
+	sto		[masterCount]
+	jmp		preEven2
+	
+checkLine2:
+	load	[lineCount]
+	jnz		preOdd1
+
+	load	0
+	sto		[oddSet]
+	
+	load	[lineTimes]
+	sto		[lineCount]
+	
+	load	[masterCount]
+	add		zero
+	shl		lowestByte
+	out		0
+	
+	load	[masterCount]		;if lineCount is 0 update masterCount
+	add		-1
+	sto		[masterCount]
+	jmp		preOdd2
+
+preEven1:
+	load	space
+	shl		lowestByte
+	out		0
+	
+preEven2:
+	load	space
+	shl		lowestByte
+	out		0
+	load	vertLine
+	shl		lowestByte
+	out		0
+	
+even:
+	load	setWhiteBg
+	sto		[PSstrPtr]
+	load	[jumpBase]
+	add		evenBGset
+	sto		[PSreturn]
+	jmp		PrintString
+	
+evenBGset:
+	load	space
+	shl		lowestByte
+	out		0
+	out		0
+	out		0
+	out		0
+	
+	load	[bIndex]
+	add		1
+	sto		[bIndex]
+	load	[evenCount]
+	add		-1
+	sto		[evenCount]
+	load	[oddCount]
+	jnz		odd
+	jmp		lineEnd
+
+preOdd1:
+	load	space
+	shl		lowestByte
+	out		0
+
+preOdd2:
+	load	space
+	shl		lowestByte
+	out		0
+	load	vertLine
+	shl		lowestByte
+	out		0
+	
+odd:
+	load	setGreenBg
+	sto		[PSstrPtr]
+	load	[jumpBase]
+	add		oddBGset
+	sto		[PSreturn]
+	jmp		PrintString
+	
+oddBGset:
+	load	space
+	shl		lowestByte
+	out		0
+	
+	load	[bIndex]
+	add		1
+	sto		[bIndex]
+	
+	lir		[bIndex]
+	load	[board+i]			;loading indexed mode
+	jnz		colorTest
+	jmp		noCheck
+	
+	colorTest:		
+		add		-1
+		jnz		setBlack
+
+	setRed:
+		load	setRedFg
+		jmp		setCheck
+
+	setBlack:
+		load	setBlackFg
+		
+	setCheck:
+		sto		[PSstrPtr]
+		load	[jumpBase]
+		add		printCheck
+		sto		[PSreturn]
+		jmp		PrintString
+
+	printCheck:
+		load	[lineCount]
+		add		-1
+		jnz		printTop
+		
+	printBottom:
+		load	halfBottom
+		shl		lowestByte
+		out		0
+		out		0
+		jmp		oddPostCheck
+		
+	printTop:
+		load	halfTop
+		shl		lowestByte
+		out		0
+		out		0
+		jmp		oddPostCheck
+	
+	noCheck:
+		load	space
+		shl		lowestByte
+		out		0
+		out		0
+		
+oddPostCheck:
+	load	space
+	shl		lowestByte
+	out		0
+	load	[oddCount]
+	add		-1
+	sto		[oddCount]
+	load	[evenCount]
+	jnz		even
+	
+lineEnd:
+	load	resetFgBg
+	sto		[PSstrPtr]
+	load	[jumpBase]
+	add		lineEndPrint
+	sto		[PSreturn]
+	jmp		PrintString
+	
+lineEndPrint:
+	load	vertLine
+	shl		lowestByte
+	out		0
+	load	newLine
+	shl		lowestByte
+	out		0
+	
+	load	[lineCount]
+	add		-1
+	jnz		keepIndex
+	
+updateIndex:
+	load	[bIndex]
+	add		-8
+	sto		[bIndex]
+	
+keepIndex:
+	load	[masterCount]
+	jnz		lineBegin
+
+bottomBorder:
+	load	space
+	shl		lowestByte
+	out		0
+	out		0
+	load	LLcorner
+	shl		lowestByte
+	out		0
+	
+	load	8
+	
+bottomBorderLoop:
+	sto		[i]
+	
+	load	horzLine
+	shl		lowestByte
+	out		0
+	out		0
+	out		0
+	out		0
+	load	[i]
+	add		-1
+	jnz		bottomBorderLoop
+
+	load	LRcorner
+	shl		lowestByte
+	out		0
+	
+	load	newLine
+	shl		lowestByte
+	out		0
+	load	space
+	shl		lowestByte
+	out		0
+	out		0
+	out		0
+	out		0
+	
+	load	8
+	
+letterLoop:
+	sto		[i]
+	load	[letter]
+	add		1
+	
+	sto		[letter]
+	shl		lowestByte
+	out		0
+	load	space
+	shl		lowestByte
+	out		0
+	out		0
+	out		0
+	
+	load	[i]
+	add		-1
+	jnz		letterLoop
+	jmp		MainLoop			;defined in checkboard.kas
+
+oddSet:			dword	0
+evenCount:		dword	0
+oddCount:		dword	0
+lineCount:		dword	0
+lineTimes:		dword	2
+countTimes:		dword	4
+masterCount: 	dword	8
+i:				dword	0
+
+letter:			dword   64 
+setWhiteBg:		dword	"\033[47m"
+setGreenBg:		dword	"\033[42m"
+setRedFg:		dword	"\033[31m"
+setBlackFg:		dword	"\033[30m"
+resetFgBg:		dword	"\033[37;40m"
+
+bIndex:			dword	-1
+boardSize:		dword	64
+
+HighlightSquare:
+
+	load	attrOff
+	sto		[PSstrPtr]
+	load	[jumpBase]
+	add		HScheckSquare
+	sto		[PSreturn]
+	jmp		PrintString
+	
+HScheckSquare:
+
+	load	[cursorX]		;check square attributes
+	add		[cursorY]
+	shl		lowestBit		;isolate lowest order bit -> even or odd
+	
+	jnz		HSgreenBG
+
+HSwhiteBG:
+
+	;if cursorX + cursor Y is even then square is white
+
+	load	setWhiteBg
+	jmp		HSPrBGControl
+
+HSgreenBG:					
+	
+	;else square is green
+	load	setGreenBg
+
+HSPrBGControl:
+
+	sto		[PSstrPtr]
+	load	[jumpBase]
+	add		HSverifyPiece
+	sto		[PSreturn]
+	jmp		PrintString
+
+HSverifyPiece:				
+
+	;is there a red or black piece in this square
+
+	load	[cursorY]		;load row index (0, 8 ... 56)
+	shl		rowOffset
+	add		[cursorX]		;add column index
+	
+	sto		[HSboardIndex]
+	lir		[HSboardIndex]
+	
+	load	[board+i]
+	sto		[HSpieceInSq]	;is there a piece in the square?
+	shl		lowestBit		;isolate lowest order bit -> even or odd
+
+	jnz		HSredPiece
+
+HSblackPiece:				
+
+	;if even it's black
+	
+	load	setBlackFg
+	jmp		HSPrFGControl
+	
+HSredPiece:					
+
+	;if odd it's red
+
+	load	setRedFg
+	
+HSPrFGControl:
+
+	sto		[PSstrPtr]
+	load	[jumpBase]
+	add		HSPrHighlight
+	sto		[PSreturn]
+	jmp		PrintString
+	
+HSPrHighlight:
+
+	load	HShighlight
+	sto		[PSstrPtr]
+	load	[jumpBase]
+	add		HSPrSetCursorH
+	sto		[PSreturn]
+	jmp		PrintString
+	
+HSPrSetCursorH:
+
+	load	HSsetCursorH	;set cursor horizontal
+	sto		[PSstrPtr]
+	load	[jumpBase]
+	add		HSPrSetCursorV
+	sto		[PSreturn]
+	jmp		PrintString
+
+HSPrSetCursorV:
+	
+	load	HSmoveUp		;set cursor vertical	
+	sto		[PSstrPtr]
+	load	[jumpBase]
+	add		HSdrawSquare1
+	sto		[PSreturn]
+	jmp		PrintString
+	
+HSdrawSquare1:				
+
+	;draw square 1st line
+
+	load	space			;write space
+	shl		lowestByte
+	out		0
+	
+	load	[HSpieceInSq]		;is there a piece in the square?
+	jnz		HSwriteHBLower
+	
+	load	space			;if not then write space
+	shl		lowestByte
+	out		0
+	out		0
+	out		0
+	
+	jmp		HSPrMoveDown
+	
+HSwriteHBLower:				
+
+	;else write half block lower
+
+	load	halfBottom
+	shl		lowestByte
+	out		0
+	out		0
+	
+	load	space
+	shl		lowestByte
+	out		0
+
+HSPrMoveDown:
+
+	load	HSmoveDown
+	sto		[PSstrPtr]
+	load	[jumpBase]
+	add		HSPrReturn
+	sto		[PSreturn]
+	jmp		PrintString
+	
+HSPrReturn:
+
+	load	HSleftEnd
+	sto		[PSstrPtr]
+	load	[jumpBase]
+	add		HSdrawSquare2
+	sto		[PSreturn]
+	jmp		PrintString
+	
+HSdrawSquare2:				
+
+	;draw square 2nd line
+
+	load	space			;write space
+	shl		lowestByte
+	out		0
+	
+	load	[HSpieceInSq]	;is there a piece in the square?
+	jnz		HSwriteHBUpper
+	
+	load	space			;if not then write space
+	shl		lowestByte
+	out		0
+	out		0
+	out		0
+	
+	jmp		HSPrResetCursor
+	
+HSwriteHBUpper:				
+
+	;else write half block upper
+
+	load	halfTop
+	shl		lowestByte
+	out		0
+	out		0
+	
+	load	space
+	shl		lowestByte
+	out		0
+
+HSPrResetCursor:			
+
+	;reset cursor
+
+	load	HSresetCursorH
+	sto		[PSstrPtr]
+	load	[jumpBase]
+	add		HSresetAttr
+	sto		[PSreturn]
+	jmp		PrintString
+
+HSresetAttr:
+
+	load	attrOff
+	sto		[PSstrPtr]
+	load	[jumpBase]
+	add		HSEnd
+	sto		[PSreturn]
+	jmp		PrintString
+
+HSEnd:					
+
+	;return to sender
+
+	jmp		HSreturnAddr
+
+HSboardIndex:	dword	0
+HSpieceInSq:	dword	0
+HSloopCounter:	dword	0
+
+HShighlight:	dword	"\033[1m"		;highlight
+HSmoveUp:		dword	"\033[1A"		;move up
+HSmoveDown:		dword	"\033[1B"		;move down
+HSleftEnd:		dword	"\033[4D"		;move left
+HSsetCursorH:	dword	"\033[1D"		;set left
+HSresetCursorH:	dword	"\033[3D"		;reset left
+
+HSreturnAddr:	dword	0				;HS return
+
+moveCursor:
+	load	attrOff
+	sto		[PSstrPtr]
+	load	[jumpBase]
+	add		mcEchoEnabled
+	sto		[PSreturn]
+	jmp		PrintString
+	
+mcEchoEnabled:
+	lir		[MCmoveIndex]
+	load	[MCmoveTable+i]
+	sto		[PSstrPtr]
+	load	[jumpBase]
+	add		mcPrinted
+	sto		[PSreturn]
+	jmp		PrintString
+	
+mcPrinted:
+	jmp		MCreturn		;defined in checkboard.kas
+
+attrOff:		dword	"\033[0m"
+cursorUp:		dword	"\033[2A"
+cursorDown:		dword	"\033[2B"
+cursorRight:	dword	"\033[4C"
+cursorLeft: 	dword	"\033[4D"
+
+MCreturn:		dword	0		;move return address
+MCmoveIndex:	dword	0		;move Index
+MCmoveTable:	dword	0		;move table[0]
+				dword	0
+				dword	0
+				dword	0
+
+PrintString:
+
+	load [[PSstrPtr]]
+	
+PSBegin:
+	out		0					;print value
+	shl		PSbyteSize
+	out		0
+	shl		PSbyteSize
+	out		0
+	shl		PSbyteSize
+	out		0
+		
+	load 	[PSstrPtr]
+	add		1
+	sto		[PSstrPtr]
+	load	[[PSstrPtr]]
+	jnz		PSBegin
+	jmp		PSreturn
+
+PSbyteSize:		equ 	8
+PSstrPtr: 		dword 	0				;string pointer
+PSreturn: 		dword	0

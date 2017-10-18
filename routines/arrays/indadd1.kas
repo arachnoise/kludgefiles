@@ -1,0 +1,26 @@
+	load	[k]
+	
+arrLoop:
+	add		-1
+	sto		[k]
+	lir		[k]
+	load	[A+i]
+	add		1
+	sto		[A+i]
+	load	[k]
+	jnz		arrLoop
+
+	halt
+	
+k:	dword	10		;k index counter
+
+A:	dword	431		;A begins here
+	dword	42
+	dword	25
+	dword	16384
+	dword	1
+	dword	16
+	dword	255
+	dword	39
+	dword	104
+	dword	9991

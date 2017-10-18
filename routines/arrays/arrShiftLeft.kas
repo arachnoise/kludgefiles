@@ -1,0 +1,118 @@
+;arrShl.kas
+;shifts array cells left towards beginning
+
+;code will break if these requirements aren't met!
+;assumptions: value is positive
+;toShift is less than arrSize
+
+	load	[toShift]
+	sto		[ARSLtoShift]
+	load	myArray
+	sto		[ARSLarrPtr]
+	load	[myArrSize]
+	sto		[ARSLarrSize]
+	load	[jumpBase]
+	add		EndHere
+	sto		[ARSLreturn]
+	jmp		ArrShiftLeft
+	
+EndHere:
+	halt
+toShift:	dword	1			;toShift
+myArrSize:	dword	2			;myArrSize
+
+myArray:	dword	1					;myArray
+			dword	2, 3, 4, 5, 6, 7, 8
+
+jumpBase:	dword	0x04200000
+
+ArrShiftLeft:
+	load	[ARSLtoShift]
+	jnz		ARSLNonZeroShift
+	
+	jmp		ARSLreturn
+
+ARSLNonZeroShift:
+	sto		[Nvalue]
+	load	ARSLPrep
+	add		[jumpBase]
+	sto		[Nreturn]
+	jmp		Negate
+	
+ARSLPrep:
+	add		[ARSLarrSize]
+	sto		[ARSLarrCount]
+	
+	load	[ARSLarrPtr]
+	sto		[ARSLdestPtr]
+	
+	add		[ARSLtoShift]
+	sto		[ARSLsrcPtr]
+
+ARSLShiftLoop:
+	load	[[ARSLsrcPtr]]
+	sto		[[ARSLdestPtr]]
+	
+	load	[ARSLsrcPtr]
+	add		1
+	sto		[ARSLsrcPtr]
+	
+	load	[ARSLdestPtr]
+	add		1
+	sto		[ARSLdestPtr]
+	
+	load	[ARSLarrCount]
+	add		-1
+	sto		[ARSLarrCount]
+	jnz		ARSLShiftLoop
+	
+	load	0
+	sto		[ARSLarrCount]
+
+ARSLZeroLoop:
+	load	0
+	sto		[[ARSLdestPtr]]
+
+	load	[ARSLdestPtr]
+	add		1
+	sto		[ARSLdestPtr]
+	
+	load	[ARSLarrCount]
+	add		-1
+	sto		[ARSLarrCount]
+	add		[ARSLtoShift]
+	jnz		ARSLZeroLoop
+
+	
+ARSLreturn:		dword	0
+
+ARSLtoShift:	dword	0
+ARSLarrPtr:		dword	0
+ARSLarrSize:	dword	0
+
+ARSLarrCount:	dword	0
+ARSLsrcPtr:		dword	0
+ARSLdestPtr:	dword	0
+
+Negate:
+	load	[Nvalue]
+	sto		[Nmult]
+	load	32
+	
+NLoop:
+	add		-1
+	sto		[Ncounter]
+	load	[Nvalue]
+	shl		1
+	add		[Nmult]
+	sto		[Nvalue]
+	load	[Ncounter]
+	jnz		NLoop
+
+	load	[Nvalue]
+
+Nreturn:	dword	0
+	
+Nvalue:		dword	0			;Nvalue
+Nmult:		dword	0			;N old value
+Ncounter:	dword	0			;N counter

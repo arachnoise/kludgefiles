@@ -1,0 +1,162 @@
+	load	[val1]
+	sto		[CMPa]
+	load	[val2]
+	sto		[CMPb]
+	load	[jumpBase]
+	add		PostCall1
+	sto		[CMPreturn]
+	jmp		CompareAB
+	
+PostCall1:
+	sto		[result]
+	halt
+	
+val1:		dword	15			;value 1
+val2:		dword	16			;value 2
+result:		dword	0			;result
+jumpBase:	dword	0x04200000
+
+CompareAB:
+
+	load	[CMPa]
+	sto		[NTtoTest]
+	load	[jumpBase]
+	add		CMPTestA
+	sto		[NTreturn]
+	jmp		NegTest
+	
+CMPTestA:
+	jnz		CMPIsNegA
+	
+	load	[CMPb]				;A is positive - test B
+	sto		[NTtoTest]
+	load	[jumpBase]
+	add		CMPTestB1
+	sto		[NTreturn]
+	jmp		NegTest
+
+CMPTestB1:
+	jnz		CMPIsNegB1
+	
+	jmp		CMPSameSign
+	
+CMPIsNegB1:
+	load	1					;A positive - B negative
+	jmp		CMPreturn
+	
+CMPIsNegA:
+
+	load	[CMPb]				;A is negative - test B
+	sto		[NTtoTest]
+	load	[jumpBase]
+	add		CMPTestB2
+	sto		[NTreturn]
+	jmp		NegTest
+	
+CMPTestB2:
+	jnz		CMPSameSign
+	
+	load	-1					;A is negative - B is positive
+	jmp		CMPreturn
+	
+CMPSameSign:
+
+	load	[CMPb]
+	sto		[Nvalue]
+	load	[jumpBase]
+	add		CMPNegateB			;A same sign as B
+	sto		[Nreturn]			;If A - B > 0 then return 1
+	jmp		Negate
+
+CMPNegateB:
+	sto		[CMPb]
+	
+CMPSubtraction:
+	load	[CMPa]
+	add		[CMPb]
+	
+	jnz		CMPUnequal
+	
+	load	0
+	jmp		CMPreturn
+
+CMPUnequal:	
+	sto		[NTtoTest]
+	load	[jumpBase]
+	add		CMPTestSub
+	sto		[NTreturn]
+	jmp		NegTest
+	
+CMPTestSub:
+	jnz		CMPBIsGreater
+	
+	load	1
+	jmp		CMPreturn
+	
+CMPBIsGreater:
+	load	-1
+	jmp		CMPreturn
+	
+CMPa:		dword	0			;CMPa
+CMPb:		dword	0			;CMPb
+CMPreturn:	dword	0
+	
+NegTest:	
+	load	31
+	sto		[NTfromLeft]
+	load	0
+	sto		[NTfromRight]
+	
+NTLoop:
+	load	[NTtoTest]
+	shl		[NTfromLeft]		;shl
+	jnz		NTBitSet
+	
+NTBitUnset:
+	jmp		NTEnd
+	
+NTBitSet:
+	load	-1
+	shl		[NTfromRight]
+	add		[NTtoTest]
+	sto		[NTtoTest]
+
+NTEnd:
+	load	[NTfromRight]
+	add		1
+	sto		[NTfromRight]
+	load	[NTfromLeft]
+	add		-1
+	sto		[NTfromLeft]
+	jnz		NTLoop
+	
+	load	[NTtoTest]
+	
+NTreturn:		dword	0		;NTtoReturn
+
+NTfromLeft:		dword	0		;position relative to HO bit
+NTfromRight:	dword	0		;position relative to LO bit
+NTtoTest:		dword	0		;NTtoTest
+
+Negate:
+	load	[Nvalue]
+	sto		[Nmult]
+	load	32
+	
+NLoop:
+	add		-1
+	sto		[Ncounter]
+	load	[Nvalue]
+	shl		1
+	add		[Nmult]
+	sto		[Nvalue]
+	load	[Ncounter]
+	jnz		NLoop
+
+	load	[Nvalue]
+
+Nreturn:	dword	0
+	
+Nvalue:		dword	0			;Nvalue
+Nmult:		dword	0			;N old value
+Ncounter:	dword	0			;N counter

@@ -1,0 +1,264 @@
+; unpackedCmp.kas
+;
+; signed comparison of unpacked extremely space-wasteful bit arrays
+; how is my compare algorithm going to work?
+;
+;	test easy cases first to short circuit evaluation if possible
+;	then evaluate arguments bit by bit
+;
+;	what assumptions am I making?
+;		the calling function will handle the parameters
+;		both compared values will be the same length
+;		the argument length will be greater than 0
+;		return values will be
+;			1 = arg1 is greater
+;			0 = arguments are equal
+;		   -1 =	arg2 is greater
+;		the comparison function will store the return value in the accumulator
+;
+;	what mistakes did I make? 
+;		Assuming that I'd need to reverse comparison signs for negative numbers
+;		Two's complement format shows that -1 appears larger than -2 because 
+;			it's closer to zero
+
+;main routine
+	
+	load	[packedVal1]			;prep for unpack of 1st value
+	sto		[UPtoUnpack]
+	
+	load	unpacked1
+	sto		[UPunpacked]
+	
+	load	[jumpCode]
+	add		PostUPCall1
+	sto		[UPretCode]
+	
+	jmp		Unpack
+	
+PostUPCall1:
+
+	load	[packedVal2]			;prep for unpack of 2nd value
+	sto		[UPtoUnpack]
+	
+	load	unpacked2
+	sto		[UPunpacked]
+	
+	load	[jumpCode]
+	add		PostUPCall2
+	sto		[UPretCode]
+	
+	jmp		Unpack
+	
+PostUPCall2:
+
+	load	unpacked1				;prep for comparison function
+	sto		[UPCMParg1Base]
+	
+	load	unpacked2
+	sto		[UPCMParg2Base]
+	
+	load	[valLength]
+	sto		[UPCMPargLen]
+	
+	load	[jumpCode]
+	add		ProgEnd
+	sto		[UPCMPretCode]
+	
+	jmp		UnpackedCmp
+	
+ProgEnd:
+
+	sto		[compResult]
+	halt
+	
+;general purpose variables
+
+jumpCode:	dword 0x04200000	;jump instruction code
+packedVal1:	dword 0x0005		;packed Value 1
+packedVal2:	dword 0x0007		;packed Value 2
+valLength:	dword 32
+compResult:	dword 0				; comparison result
+
+unpacked1:	dword 0, 0, 0, 0, 0, 0, 0, 0
+			dword 0, 0, 0, 0, 0, 0, 0, 0
+			dword 0, 0, 0, 0, 0, 0, 0, 0
+			dword 0, 0, 0, 0, 0, 0, 0, 0
+unpacked2:	dword 0, 0, 0, 0, 0, 0, 0, 0
+			dword 0, 0, 0, 0, 0, 0, 0, 0
+			dword 0, 0, 0, 0, 0, 0, 0, 0
+			dword 0, 0, 0, 0, 0, 0, 0, 0
+			
+UnpackedCmp:
+
+	load	0						; clean up (possibly) dirty variables
+	sto		[UPCMPresult]
+	
+	load	[UPCMPargLen]			; prepare for sign test
+	add		-1						; set current bit to highest (sign) bit position
+	sto		[UPCMPcurrentBit]
+	
+	load	[UPCMParg1Base]			; set pointers
+	add		[UPCMPcurrentBit]		
+	sto		[UPCMParg1Curr]
+	
+	load	[UPCMParg2Base]
+	add		[UPCMPcurrentBit]
+	sto		[UPCMParg2Curr]
+	
+	; test sign bits
+	
+	load	[[UPCMParg1Curr]]		; test arg 1 bit
+	jnz		UPCMPArg1Neg
+									;   if 0 then
+	load	[[UPCMParg2Curr]]		; 	test arg 2 bit
+	jnz		UPCMPArg2Neg
+									; 	positive-positive
+	jmp		UPCMPLoopPreCond		;		start evaluation
+
+UPCMPArg2Neg:
+									;	positive-negative
+	load	1						;		result is 1
+	jmp		UPCMPretCode			;		return with result
+
+UPCMPArg1Neg:
+									; if 1 then 
+	load	[[UPCMParg2Curr]]		;	test arg 2 bit
+	jnz		UPCMPLoopPreCond
+									;	negative-positive
+	load	-1						;		result is -1
+	jmp		UPCMPretCode			;		return with result
+	
+									;	negative-negative
+UPCMPLoopPreCond:
+									;		start evaluation		
+	load	[UPCMPcurrentBit]
+	jnz		UPCMPEvalLoop
+	
+	;if there are no bits to test then return 0
+	
+	load	0
+	jmp		UPCMPretCode
+	
+UPCMPEvalLoop:
+	
+	add		-1	
+	sto		[UPCMPcurrentBit]
+	
+	load	[UPCMParg1Curr]	
+	add		-1
+	sto		[UPCMParg1Curr]
+	
+	load	[UPCMParg2Curr]
+	add		-1
+	sto		[UPCMParg2Curr]
+	
+	;cases to test: 1-1 1-0 0-1 0-0
+
+	load	[[UPCMParg1Curr]]		; test arg 1 bit
+	jnz		UPCMPArg1Set			; if 0 then
+
+	load	[[UPCMParg2Curr]]		;	test arg 2 bit
+	jnz		UPCMPArg1Less
+									;	if 0 then it's case 0-0
+	jmp		UPCMPLoopCond			;		continue loop
+	
+UPCMPArg1Less:	
+					
+	load	-1						;	if 1 then it's case 0-1
+	sto		[UPCMPresult]			;		result is -1
+	jmp		UPCMPPostLoop			;		break
+	
+UPCMPArg1Set:
+									; if 1 then
+	load	[[UPCMParg2Curr]]		;	test arg 2 bit
+	jnz		UPCMPLoopCond			;	if 1 then it's case 1-1
+									;		continue loop
+	load	1						;	if 0 then it's case 1-0
+	sto		[UPCMPresult]			;		result is 1
+	jmp		UPCMPPostLoop			;		break
+
+UPCMPLoopCond:
+
+	load	[UPCMPcurrentBit]
+	jnz		UPCMPEvalLoop
+	
+; Loop fallthrough	
+;	If we get here then the values are equal
+;	Return 0 to sender
+
+	load	[UPCMPresult]
+	jmp		UPCMPretCode
+
+UPCMPPostLoop:
+	
+	load	[UPCMPresult]
+	jmp		UPCMPretCode			;	return result
+
+;unpackCmp parameters
+
+UPCMParg1Base:		dword 0		; reference to first argument
+UPCMParg2Base:		dword 0		; reference to second argument
+UPCMPargLen:		dword 0		; length of arguments
+UPCMPretCode:		dword 0		; return address and instruction
+
+;unpackCmp variables
+
+UPCMParg1Curr:		dword 0		; pointer to current position in argument 1
+UPCMParg2Curr:		dword 0		; pointer to current position in argument 2
+UPCMPcurrentBit:	dword 0		; index of current bit in argument
+UPCMPresult:		dword 0		; result to return to caller
+
+;this version of unpack depends on the calling routine to
+;	pass parameters.
+;
+Unpack:
+	
+	load	0
+	sto		[UPcurrPos]
+	
+	load	32				;number of bits in an addressed value
+	
+UnpackLoop:
+	add		-1
+	sto		[UPfromLeft]	;update distance from big (left) end of value
+
+	load	[UPtoUnpack]	;get bit
+	shl		[UPfromLeft]
+
+	jnz		UnpackBitIsSet
+
+UnpackBitNotSet:
+	load	0				;store bit in accumulator
+	jmp		UnpackEnd
+	
+UnpackBitIsSet:
+	load	-1
+	shl		[UPcurrPos]		;if set - clear this bit
+	add		[UPtoUnpack]
+	sto		[UPtoUnpack]
+	
+	load	1				;store bit in accumulator
+
+UnpackEnd:
+	sto		[[UPunpacked]]	;store in unpacked value
+	
+	load	[UPunpacked]	;increment pointer address
+	add		1
+	sto		[UPunpacked]	
+	
+	load	[UPcurrPos]		;update current position
+	add		1
+	sto		[UPcurrPos]			
+	
+	load	[UPfromLeft]	;if more bits to shift
+	jnz		UnpackLoop		;end of loop
+	
+	jmp		UPretCode
+	
+;unpack Variables	
+
+UPcurrPos: 		dword 0	
+UPfromLeft:		dword 0
+UPtoUnpack:		dword 0		;value to unpack
+UPunpacked:		dword 0		;pointer to unpacked Value
+UPretCode:		dword 0		;return to specified address

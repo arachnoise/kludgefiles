@@ -1,0 +1,11 @@
+;booltest.kas
+
+	load	[boolFlag]
+	sto		[bool1]
+	add		[boolFlag]
+	sto		[bool2]
+	halt
+	
+boolFlag:	dword	0x80000000
+bool1:		dword	0
+bool2:		dword	0

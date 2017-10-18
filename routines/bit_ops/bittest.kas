@@ -1,0 +1,88 @@
+;bit.kas
+;
+;general purpose bit tester
+;
+	load	[orig]
+	sto		[toTest]
+	jmp		bitTest
+	
+progEnd:
+	halt
+	
+;bitTest routine
+;
+; What problem does bitTest try to solve?
+;	bitTest is a function that tests if bit number X is set to 1 or 0
+;	X here denotes the position from right to left,
+;	0 being the rightmost bit and 31 being the leftmost
+;	
+; How does bitTest approach the problem?
+;	bitTest tests and clears bits, starting at the rightmost side
+;	until it reaches the bit it needs. To make each test, bitTest shifts the
+;	testing value to the left so that the bit it wants is at the leftmost
+;	highest order position. This clears all extraneous information so bitTest
+;	can easily see if the bit in question is 1 or 0.
+;
+; Why is this method necessary?
+;	The kludge machine only allows bit shift left and branch on 0 operations
+;	This necessitates a somewhat creative approach.
+;
+; What side-effects does bitTest have?
+;	bitTest clobbers the testing value sent to it.
+;
+
+bitTest:
+	load	0
+	sto		[currentPos]
+	load	1
+	sto		[loopCount]
+	load	31
+	sto		[fromLeft]		;position relative to leftmost HO bit
+
+clearBits:
+	load	[toTest]
+	shl		[fromLeft]		;shift to HO bit
+	jnz		bitset
+	
+bitunset:
+	load	0				;store bit in accumulator
+	jmp		bitend
+	
+bitset:
+	load	-1
+	shl		[currentPos]	;if set - clear this bit
+	add		[toTest]
+	sto		[toTest]
+	load	1				;store bit in accumulator
+
+bitend:
+	sto		[bitretval]		;These are temporary values until final loop
+	load	1
+	add		[currentPos]	;move to a higher order bit
+	sto		[currentPos]
+	load	-1
+	add		[fromLeft]		;shrink the distance from HO bit
+	sto		[fromLeft]
+	load	-1
+	add		[loopCount]
+	sto		[loopCount]		;update counter
+	add		[bitPos]		;when bitPos + loopCount equals 0
+	jnz		clearBits		;there are no more bits to test/clear
+
+	jmp		progEnd
+	
+;bitset parameters
+;
+bitPos:		dword 5			;bitPosition
+toTest:		dword 0			;toTest
+
+;bitset variables
+;
+currentPos:	dword 0			;currentPos
+loopCount:	dword 0			;loopCount
+bitretval:	dword 0			;bitretval
+fromLeft:	dword 0			;fromLeft
+
+;other variables
+;
+orig:	dword 0xFFFF0020	;orig

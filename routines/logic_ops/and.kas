@@ -1,0 +1,78 @@
+	load	[and1]
+	sto		[ANDval1]
+	load	[and2]
+	sto		[ANDval2]
+	load	[jumpBase]
+	add		EndHere
+	sto		[ANDreturn]
+	jmp		And
+	
+EndHere:
+	sto		[result]
+	halt
+	
+and1:		dword	0x1248		;and2
+and2:		dword	0x8421		;and1
+result:		dword	0			;result
+jumpBase:	dword	0x04200000	;jumpbase
+
+And:
+	load	0
+	sto		[ANDuCount]
+	sto		[ANDresult]
+	
+	load	32
+	
+ANDLoop:
+	add		-1
+	sto		[ANDfromLeft]
+	
+	load	[ANDval1]	
+	shl		[ANDfromLeft]
+	jnz		AND1BitSet
+	
+	load	[ANDval2]
+	shl		[ANDfromLeft]
+	jnz		AND2BitSet
+	jmp		ANDLoopEnd
+
+AND1BitSet:
+	load	-1
+	shl		[ANDuCount]		;clear bit
+	add		[ANDval1]
+	sto		[ANDval1]
+	
+	load	[ANDval2]
+	shl		[ANDfromLeft]
+	jnz		ANDBothBitSet
+	jmp		ANDLoopEnd
+	
+ANDBothBitSet:
+	load	1				;1 and 2 both set
+	shl		[ANDuCount]		;so set ANDresult bit
+	add		[ANDresult]
+	sto		[ANDresult]
+	
+AND2BitSet:
+	load	-1
+	shl		[ANDuCount]		;clear bit
+	add		[ANDval2]
+	sto		[ANDval2]
+
+ANDLoopEnd:
+	load	[ANDuCount]
+	add		1
+	sto		[ANDuCount]
+	load	[ANDfromLeft]
+	jnz		ANDLoop
+
+	load	[ANDresult]
+
+ANDreturn:		dword	0
+	
+ANDval1:		dword	0		;ANDval1
+ANDval2:		dword	0		;ANDval2
+
+ANDfromLeft:	dword	0		;ANDfromLeft
+ANDresult:		dword	0		;ANDresult
+ANDuCount:		dword	0		;ANDuCount

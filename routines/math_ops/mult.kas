@@ -1,0 +1,40 @@
+;mult.kas
+;simple multiplication program
+
+	load	[mult2]
+	sto		[m2WorkingVal]
+	load	[fromLeft]
+
+mBase:
+	add		-1
+	sto		[fromLeft]
+	load	[m2WorkingVal]
+	shl		[fromLeft]		;LO bit becomes HO bit, clear others
+	jnz		bitset
+	jmp		end
+
+bitset:
+	load	-1
+	shl		[ucount]		;clear bit
+	add		[m2WorkingVal]
+	sto		[m2WorkingVal]
+	load	[mult1]			
+	shl		[ucount]
+	add		[result]		;add to partial sum
+	sto		[result]
+	
+end:
+	load	[ucount]
+	add		1
+	sto		[ucount]
+	load	[fromLeft]
+	jnz		mBase
+	
+	halt
+
+mult1:		dword	5		;mult1
+mult2:		dword	3		;mult2
+m2WorkingVal: dword	0		;m2WorkingVal
+result:		dword	0		;result
+fromLeft:	dword	32		;fromLeft
+ucount:		dword	0		;ucount

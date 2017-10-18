@@ -1,0 +1,30 @@
+0000	01000102	base:	load	toShift
+0001	0620FFFF			add		-1
+0002	02000102			sto		toShift
+
+0003	01000100			load	var
+0004	07000102			shl		toShift
+0005	05000007			jnz		set
+
+0006	0400000B			jump	final
+
+0007	0120FFFF	set:	load	-1
+0008	07000101			shl		x
+0009	06000100			add		var
+000A	02000100			sto		var
+
+000B	01000101	final:	load	x
+000C	06200001			add		1
+000D	02000101			sto		x
+
+000E	01000102			load	toShift
+000F	05000000			jnz		base
+
+0010	08000000			halt
+
+0100	F0F0F0F0			var
+0101	00000000			x
+0102	00000020			toShift
+
+99999
+0100	0101	0102

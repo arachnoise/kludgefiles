@@ -1,0 +1,95 @@
+00	0100004A			load	i
+
+01	0620FFFF	iLoop:	add 	-1
+02	0200004A			sto		i
+03	06200001			add		1
+
+04	0620FFFF	jLoop:	add 	-1
+05	0200004B			sto		j
+06	0300004B			lir		j
+07	01800040			load 	a[j]
+08	0200004D			sto 	neg	
+09	0200004E			sto		temp
+0A	01200020			load 	32
+
+0B	0620FFFF	mloop:	add 	-1
+0C	0200004C			sto 	k
+0D	0100004D			load 	neg
+0E	07200001			shl		1
+0F 	0600004E			add 	temp
+10	0200004D			sto		neg
+11	0100004C			load	k
+12	0500000B			jnz		mloop
+
+13	0300004A	cmpr:	lir		i
+14	01800040			load 	a[i]
+15	0600004D			add 	neg
+16	05000050			jnz		btclear
+
+17	01800040	swap:	load	a[i]
+18	0200004E			sto		temp
+19	0300004B			lir		j
+1A	01800040			load	a[j]
+1B	0300004A			lir		i
+1C	02800040			sto		a[i]
+1D	0100004E			load	temp
+1E	0300004B			lir		j
+1F	02800040			sto 	a[j]
+
+20	0100004B	noop:	load 	j
+21	05000004			jnz		jloop
+22	0100004A			load 	i
+23	0200004B			sto		j
+24	05000001			jnz		iloop
+
+25	08000000	end:	halt
+
+40	00000041	a[0]	In decimal 65
+41	0000004E			In decimal 78
+42	00000020			In decimal 32
+43	00000001			In decimal 1
+44	00000004			In decimal 4
+45	000001B3			In decimal 435
+46	00000017			In decimal 23
+47	00000008			In decimal 8
+48	0000005A			In decimal 90
+49	0000000A			In decimal 10
+4A	0000000A	i		Outer loop counter
+4B	0000000A	j		Inner loop counter
+4C	00000000	k		Multiplication loop counter
+4D	00000000	neg		Negative of a[j]
+4E	00000000	temp	Temporary placeholder
+
+50	020000FF	btclear:sto		var
+51	0120001F			load	1F
+52	020000FD			sto		toShift
+53	01200000			load	0
+54	020000FE			sto		x
+
+55	010000FF	base:	load	var
+56	070000FD			shl		toShift
+57	05000059			jnz		set
+58	0400005D			jmp		final
+
+59	0120FFFF	set:	load	-1
+5A	070000FE			shl		x
+5B	060000FF			add		var
+5C	020000FF			sto		var
+
+5D	010000FE	final:	load	x
+5E	06200001			add		1
+5F	020000FE			sto		x
+60	010000FD			load	toShift
+61	0620FFFF			add		-1
+62	020000FD			sto		toShift
+63	05000055			jnz		base
+
+64	010000FF	cmp2:	load	var
+65	05000017			jnz		swp
+66	04000020			jmp		noop
+
+FD	0000001F			toShift
+FE	00000000			x
+FF	00000000			var
+99999
+40 41 42 43 44 45 46 47 48 49 4D	FF

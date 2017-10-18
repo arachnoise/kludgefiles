@@ -1,0 +1,140 @@
+
+Main:
+	in		0
+	
+	load	clearDisp
+	sto		[PSstrPtr]
+	load	[jumpBase]
+	add		PostCall1
+	sto		[PSreturn]
+	jmp		PrintString
+
+PostCall1:
+
+	load	echoOff
+	sto		[PSstrPtr]
+	load	[jumpBase]
+	add		PostCall2
+	sto		[PSreturn]
+	jmp		PrintString
+
+PostCall2:
+	in		0
+	
+	load	attrOff
+	sto		[PSstrPtr]
+	load	[jumpBase]
+	add		PostCall3
+	sto		[PSreturn]
+	jmp		PrintString
+
+PostCall3:
+	load	setCursor
+	sto		[PSstrPtr]
+	load	[jumpBase]
+	add		PostCall4
+	sto		[PSreturn]
+	jmp		PrintString
+	
+PostCall4:
+
+	load	echoOff
+	sto		[PSstrPtr]
+	load	[jumpBase]
+	add		PostCall5
+	sto		[PSreturn]
+	jmp		PrintString
+	
+PostCall5:
+	in		0
+	
+	load	attrOff
+	sto		[PSstrPtr]
+	load	[jumpBase]
+	add		PostCall6
+	sto		[PSreturn]
+	jmp		PrintString
+	
+PostCall6:
+	load	saveCursor
+	sto		[PSstrPtr]
+	load	[jumpBase]
+	add		PostCall7
+	sto		[PSreturn]
+	jmp		PrintString
+	
+PostCall7:
+	load	moveCursor
+	sto		[PSstrPtr]
+	load	[jumpBase]
+	add		PostCall8
+	sto		[PSreturn]
+	jmp		PrintString
+	
+PostCall8:
+	load	echoOff
+	sto		[PSstrPtr]
+	load	[jumpBase]
+	add		PostCall9
+	sto		[PSreturn]
+	jmp		PrintString
+	
+PostCall9:
+	in		0
+	
+	load	attrOff
+	sto		[PSstrPtr]
+	load	[jumpBase]
+	add		PostCall10
+	sto		[PSreturn]
+	jmp		PrintString
+	
+PostCall10:
+	load	retrCursor
+	sto		[PSstrPtr]
+	load	[jumpBase]
+	add		PostCall11
+	sto		[PSreturn]
+	jmp		PrintString
+	
+PostCall11:
+	in		0
+	halt
+	
+;set cursor
+;save value
+;return to cursor
+
+attrOff:		dword	"\033[0m"
+echoOff:		dword	"\033[8m"
+clearDisp:		dword	"\033[2J"
+
+setCursor:		dword	"\033[10;20H"
+moveCursor:		dword	"\033[5A\033[5D"
+saveCursor:		dword	"\033[s"
+retrCursor:		dword	"\033[u"
+
+jumpBase:		dword	0x04200000
+PrintString:
+
+	load [[PSstrPtr]]
+	
+PSBegin:
+	out		0					;print value
+	shl		PSbyteSize
+	out		0
+	shl		PSbyteSize
+	out		0
+	shl		PSbyteSize
+	out		0
+		
+	load 	[PSstrPtr]
+	add		1
+	sto		[PSstrPtr]
+	load	[[PSstrPtr]]
+	jnz		PSBegin
+	jmp		PSreturn
+
+PSbyteSize:		equ 	8
+PSstrPtr: 		dword 	0				;string pointer
+PSreturn: 		dword	0

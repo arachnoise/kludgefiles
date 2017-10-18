@@ -1,0 +1,87 @@
+;checkerboard.kas
+;
+;prints a green and white checkerboard onto the screen
+;
+;
+;algorithm: print 4 even lines
+;			print 4 odd lines
+;			repeat 8 times
+;
+
+	jmp		ProgramStart
+
+#include globals.kh
+#include inputfunc.kas
+#include printfunc.kas
+#include rules.kas
+
+ProgramStart:
+
+	in		0
+	
+;seed table
+	
+	load	cursorUp
+	sto		[MCmoveTable]
+	load	cursorDown
+	sto		[MCmoveTable+1]
+	load	cursorRight
+	sto		[MCmoveTable+2]
+	load	cursorLeft
+	sto		[MCmoveTable+3]
+
+;prepare return address for moveCursor and highlighSquare routine
+
+	load	[jumpBase]
+	add		MLInputStart
+	sto		[MCreturn]
+	sto		[HSreturnAddr]
+	
+;clear display	
+	load	clearDisp
+	sto		[PSstrPtr]
+	load	[jumpBase]
+	add		drawBoard
+	sto		[PSreturn]
+	jmp		PrintString
+
+	jmp		drawBoard
+	
+MainLoop:
+
+	load	resetCursor
+	sto		[PSstrPtr]
+	load	[jumpBase]
+	add		MLInputStart
+	sto		[PSreturn]
+	jmp		PrintString
+	
+MLInputStart:
+	load	echoOff
+	sto		[PSstrPtr]
+	load	[jumpBase]
+	add		inputSelect
+	sto		[PSreturn]
+	jmp		PrintString
+
+MLEnd:
+	halt
+			
+
+echoOff:		dword	"\033[8m"
+
+resetCursor:	dword	"\033[2;4H"
+clearDisp:		dword	"\033[2J"
+
+playerTurn:		dword	0
+boolFlag:		dword	0x80000000
+jumpBase:		dword	0x04200000
+
+board:	dword	0, 2, 0, 2, 0, 2, 0, 2
+		dword	2, 0, 2, 0, 2, 0, 2, 0
+		dword	0, 0, 0, 2, 0, 2, 0, 2
+		dword	0, 0, 2, 0, 0, 0, 0, 0
+		dword	0, 1, 0, 0, 0, 0, 0, 0
+		dword   0, 0, 1, 0, 1, 0, 1, 0
+		dword	0, 1, 0, 1, 0, 1, 0, 1
+		dword	1, 0, 1, 0, 1, 0, 1, 0

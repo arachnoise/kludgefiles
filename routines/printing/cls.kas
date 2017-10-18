@@ -1,0 +1,21 @@
+
+	in		0
+	
+	load	27
+	shl		24
+	out		0
+	
+	load	91
+	shl		24
+	out		0
+	
+	load	50
+	shl		24
+	out		0
+	
+	load	74
+	shl		24
+	out		0
+	
+	in		0
+	halt

@@ -1,0 +1,180 @@
+0000	012000B0
+0001	020000AF
+0002	01200019 		load  return  address
+0003	024000AA 		stackPtr  +  0  :  return  addrese
+0004	010000AA
+0005	06200001
+0006	020000AB
+0007	010000AD 		load  1st  parm  i
+0008	024000AB 		stackPtr  +  1:  i
+0009	010000AB
+000A	06200001
+000B	020000AB
+000C	0120000A 		load  2nd  parm  start
+000D	024000AB 		stackPtr  +  2:  start
+000E	010000AB
+000F	06200001
+0010	020000AB
+0011	0120000B 		load  3rd  parm  int
+0012	024000AB 		stackPtr  +  3:  int
+0013	010000AB
+0014	06200001
+0015	020000AB
+0016	0120000C 		load  4th  parm  goal
+0017	024000AB 		stackPtr  +  4:  goal
+0018	0420001A
+0019	08000000
+001A	010000AA
+001B	06200001
+001C	020000AB
+001D	014000AB 		stackPtr  +  1  is  i
+001E	0620FFFF
+001F	05200021 		if(i  !=  1)  then  jmp
+0020	0420008D 		else  terminal  case
+0021	010000AA
+0022	06200005 		Five  is  stack  frame  size
+0023	020000AA 		update  stack  pointer
+0024	01200048 		load  return  address
+0025	024000AA 		stackPtr  +  0  :  return  address
+0026	010000AA
+0027	0620FFFC
+0028	020000AB 		old  i  is  at  stackPtr  -  4
+0029	010000AA
+002A	06200001
+002B	020000AC 		i  is  at  stackPtr  +  1
+002C	014000AB
+002D	0620FFFF
+002E	024000AC 		i  =  oldi  -  1
+002F	010000AA
+0030	0620FFFD 		old  start  is  at  stackPtr  -  3
+0031	020000AB
+0032	010000AA
+0033	06200002
+0034	020000AC 		start  is  at  stackPtr  +  2
+0035	014000AB
+0036	024000AC 		start  =  oldstart
+0037	010000AA
+0038	0620FFFF 		old  goal  is  at  stackPtr  -  1
+0039	020000AB
+003A	010000AA
+003B	06200003
+003C	020000AC 		int  is  at  stackPtr  +  3
+003D	014000AB
+003E	024000AC 		int  =  old  goal
+003F	010000AA
+0040	0620FFFE 		old  int  is  at  stackPtr  -  2
+0041	020000AB
+0042	010000AA
+0043	06200004
+0044	020000AC 		goal  is  at  stackPtr  +  4
+0045	014000AB
+0046	024000AC 		goal  =  old  int
+0047	0420001A
+0048	010000AA
+0049	0620FFFB 		Five  is  stack  frame  size
+004A	020000AA 		update  stack  pointer
+004B	010000AA
+004C	06200001
+004D	020000AB 		i  is  stackPtr  +  1
+004E	014000AF
+004F	07200004
+0050	064000AB 		store  disc  number
+0051	024000AF 		into  shifted  buffer
+0052	010000AA
+0053	06200004
+0054	020000AB 		goal  is  stackPtr  +  4
+0055	014000AF
+0056	07200004
+0057	064000AB 		store  tower  move
+0058	024000AF 		into  shifted  buffer
+0059	010000AE
+005A	0620FFFF
+005B	020000AE
+005C	05200062
+005D	01200004 		pack  4  values  per  address
+005E	020000AE
+005F	01200001
+0060	060000AF
+0061	020000AF 		update  buffer  pointer
+0062	010000AA
+0063	06200005 		Five  is  stack  frame  size
+0064	020000AA 		update  stack  pointer
+0065	01200089 		load  return  address
+0066	024000AA 		stackPtr  +  0  :  return  address
+0067	010000AA
+0068	0620FFFC
+0069	020000AB 		old  i  is  at  stackPtr  -  4
+006A	010000AA
+006B	06200001
+006C	020000AC 		i  is  at  stackPtr  +  1
+006D	014000AB
+006E	0620FFFF
+006F	024000AC 		i  =  oldi  -  1
+0070	010000AA
+0071	0620FFFE 		old  int  is  at  stackPtr  -  2
+0072	020000AB
+0073	010000AA
+0074	06200002
+0075	020000AC 		start  is  at  stackPtr  +  2
+0076	014000AB
+0077	024000AC 		start  =  oldint
+0078	010000AA
+0079	0620FFFD 		old  start  is  at  stackPtr  -  3
+007A	020000AB
+007B	010000AA
+007C	06200003
+007D	020000AC 		int  is  at  stackPtr  +  3
+007E	014000AB
+007F	024000AC 		int  =  oldstart
+0080	010000AA
+0081	0620FFFF 		old  goal  is  at  stackPtr  -  1
+0082	020000AB
+0083	010000AA
+0084	06200004
+0085	020000AC 		goal  is  at  stackPtr  +  4
+0086	014000AB
+0087	024000AC 		goal  =  old  int
+0088	0420001A
+0089	010000AA
+008A	0620FFFB 		Five  is  stack  frame  size
+008B	020000AA 		update  stack  pointer
+008C	042000A4
+008D	010000AA
+008E	06200001
+008F	020000AB 		i  is  stackPtr  +  1
+0090	014000AF
+0091	07200004
+0092	064000AB 		store  disc  number
+0093	024000AF 		into  shifted  buffer
+0094	010000AA
+0095	06200004
+0096	020000AB 		goal  is  stackPtr  +  4
+0097	014000AF
+0098	07200004
+0099	064000AB 		store  tower  move
+009A	024000AF 		into  shifted  buffer
+009B	010000AE
+009C	0620FFFF
+009D	020000AE
+009E	052000A4
+009F	01200004 		pack  4  values  per  address
+00A0	020000AE
+00A1	01200001
+00A2	060000AF
+00A3	020000AF 		update  buffer  pointer
+00A4	014000AA 		load  return  address
+00A5	060000A8 		add  jmp  opcode
+00A6	020000A9 		store  at  trampoline
+00A7	042000A9 		jump  to  trampoline
+00A8	04200000
+00A9	00000000 		trampoline
+00AA	0000F000 		Stack  Pointer
+00AB	00000000 		tempStPtr1
+00AC	00000000 		tempStPtr2
+00AD	00000005		i:  tower  height
+00AE	00000004 		print  counter
+00AF	00000000 		printBufPtr
+00B0	00000000 		print  buffer
+
+99999
+00B0 00B1 00B2 00B3 00B4 00B5 00B6 00B7

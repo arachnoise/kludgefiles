@@ -1,0 +1,95 @@
+inputSelect:
+	load	0
+	in		0
+	sto		[inputKey]
+	
+	add		cQuit
+	jnz		caseSelect
+	jmp		MLEnd			;defined in checkboard.kas
+	
+	caseSelect:
+		load	[inputKey]
+		add		cSqSelect
+		jnz		caseUp
+		
+		jmp		HighlightSquare
+		
+	caseUp:
+		load	[inputKey]
+		add		cUp
+		jnz		caseDown
+		
+		load	[cursorY]
+		jnz		decCursorY
+		jmp		inputSelect
+	
+		decCursorY:
+			add		-1
+			sto		[cursorY]
+			load	0
+			sto		[MCmoveIndex]
+			jmp		moveCursor
+	
+	caseDown:
+		load	[inputKey]
+		add		cDown
+		jnz		caseRight
+		
+		load	[cursorY]
+		add		cursorLimit
+		jnz		incCursorY
+		jmp		inputSelect
+		
+		incCursorY:
+			load	[cursorY]
+			add		1
+			sto		[cursorY]
+			load	1
+			sto		[MCmoveIndex]
+			jmp		moveCursor
+	
+	caseRight:
+		load	[inputKey]
+		add		cRight
+		jnz		caseLeft
+		
+		load	[cursorX]
+		add		cursorLimit
+		jnz		incCursorX
+		jmp		inputSelect
+		
+		incCursorX:
+			load	[cursorX]
+			add		1
+			sto		[cursorX]
+			load	2
+			sto		[MCmoveIndex]
+			jmp		moveCursor
+
+	caseLeft:
+		load	[inputKey]
+		add		cLeft
+		jnz		inputSelect
+		
+		load	[cursorX]
+		jnz		decCursorX
+		jmp		inputSelect
+		
+		decCursorX:
+			add		-1
+			sto		[cursorX]
+			load	3
+			sto		[MCmoveIndex]
+			jmp		moveCursor
+			
+inputKey:		dword	0		;input
+cQuit:			equ		-113	;press q to quit
+cUp:			equ		-119	;w
+cDown:			equ		-115	;a
+cRight:			equ		-100	;s
+cLeft:			equ		-97		;d
+cSqSelect:		equ		-112	;p
+
+cursorLimit:	equ		-7
+cursorX:		dword	0
+cursorY:		dword	0

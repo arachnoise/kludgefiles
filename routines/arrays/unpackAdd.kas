@@ -1,0 +1,264 @@
+; unpackAdd.kas
+;
+; addition of unpacked kludgy numbers
+;
+; July 5, 2013
+; Brent Mercer
+
+; algorithm:
+;	bit by bit full adder implementation 
+;
+;	boolean math
+;	a = first addend
+;	b = second addend
+;	c = carry bit
+;
+;   result = !a!bc + !ab!c + a!b!c + abc
+;	carry = ab + ac + bc
+;
+;	truth table:
+;
+;	a	b	c | r	c
+;  -----------+-------
+;	0	0	0 | 0	0
+;	0	0	1 | 1	0
+;	0	1	0 |	1	0
+;	0	1	1 | 0	1
+;	1	0	0 | 1	0
+;	1	0	1 |	0	1
+;	1	1	0 | 0	1
+;	1	1	1 |	1	1
+;
+;	decision table-based logic
+;		if a is true then
+;			add 4 to index
+;		if b is true then
+;			add 2 to index
+;		if c is true then
+;			add 1 to index
+;
+
+;main routine
+	
+	load	[packedVal1]			;prep for unpack of 1st value
+	sto		[UPtoUnpack]
+	
+	load	unpacked1
+	sto		[UPunpacked]
+	
+	load	[jumpCode]
+	add		PostUPCall1
+	sto		[UPretCode]
+	
+	jmp		Unpack
+	
+PostUPCall1:
+
+	load	[packedVal2]			;prep for unpack of 2nd value
+	sto		[UPtoUnpack]
+	
+	load	unpacked2
+	sto		[UPunpacked]
+	
+	load	[jumpCode]
+	add		PostUPCall2
+	sto		[UPretCode]
+	
+	jmp		Unpack
+	
+PostUPCall2:
+
+	load	unpacked1
+	sto		[UPAddAddend1]
+	
+	load	unpacked2
+	sto		[UPAddAddend2]
+	
+	load	addResult
+	sto		[UPAddResult]
+	
+	load	[valLength]
+	sto		[UPAddBitsToAdd]
+	
+	load	[jumpCode]
+	add		PostUPAddCall
+	sto		[UPAddRetCode]
+	
+	jmp		UPAdd
+
+PostUPAddCall:
+
+	halt
+	
+;general purpose variables
+
+jumpCode:	dword 0x04200000	;jump instruction code
+packedVal1:	dword 0x0005		;packed Value 1
+packedVal2:	dword 0x0007		;packed Value 2
+valLength:	dword 32
+
+unpacked1:	dword 0, 0, 0, 0, 0, 0, 0, 0
+			dword 0, 0, 0, 0, 0, 0, 0, 0
+			dword 0, 0, 0, 0, 0, 0, 0, 0
+			dword 0, 0, 0, 0, 0, 0, 0, 0
+			
+unpacked2:	dword 0, 0, 0, 0, 0, 0, 0, 0
+			dword 0, 0, 0, 0, 0, 0, 0, 0
+			dword 0, 0, 0, 0, 0, 0, 0, 0
+			dword 0, 0, 0, 0, 0, 0, 0, 0
+			
+addResult:	dword 0, 0, 0, 0, 0, 0, 0, 0
+			dword 0, 0, 0, 0, 0, 0, 0, 0
+			dword 0, 0, 0, 0, 0, 0, 0, 0
+			dword 0, 0, 0, 0, 0, 0, 0, 0
+
+; caller: remember to pass parameters to this routine -_-
+;
+UPAdd: 
+
+	load	0
+	sto		[UPAddCarryBit]			; zero out carry bit
+
+	load	[UPAddBitsToAdd]		; return if no bits to add
+	jnz		UPAddLoop
+	jmp		UPAddRetCode
+	
+UPAddLoop:
+
+	add		-1
+	sto		[UPAddBitsToAdd]		;	decrement bit counter
+
+	load	0						;	zero out table index
+	sto		[UPAddTableIndex]
+
+	load	[[UPAddAddend1]]
+	jnz		UPAddSet1				;		if addend 1 is 1 then
+	jmp		UPAddUnset1				;			add 4 to table index
+	
+UPAddSet1:
+
+	load	[UPAddTableIndex]
+	add		4
+	sto		[UPAddTableIndex]
+
+UPAddUnset1:
+
+	load	[[UPAddAddend2]]
+	jnz		UPAddSet2				;		if addend 2 is 1 then
+	jmp		UPAddUnset2				;			add 2 to table index
+	
+UPAddSet2:
+
+	load	[UPAddTableIndex]
+	add		2
+	sto		[UPAddTableIndex]
+	
+UPAddUnset2:
+
+	load	[UPAddCarryBit]
+	jnz		UPAddCarrySet			;		if carry bit is 1 then
+	jmp		UPAddCarryUnset			;			add 1 to table index
+	
+UPAddCarrySet:
+
+	load	[UPAddTableIndex]
+	add		1
+	sto		[UPAddTableIndex]
+	
+UPAddCarryUnset:
+
+	lir		[UPAddTableIndex]
+	
+	load	[UPAddResultTable+i]	;		look up result table[table index]
+	sto		[[UPAddResult]]			;		assign to result
+	
+	load	[UPAddCarryTable+i]		;		look up carry table[table index]
+	sto		[UPAddCarryBit]			;		assign to carry bit
+
+	load	[UPAddAddend1]			;		update pointer to addend 1
+	add		1
+	sto		[UPAddAddend1]
+	
+	load	[UPAddAddend2]			;		update pointer to addend 2
+	add		1
+	sto		[UPAddAddend2]
+	
+	load 	[UPAddResult]			;		update pointer to result
+	add		1
+	sto		[UPAddResult]
+	
+	load	[UPAddBitsToAdd]
+	jnz		UPAddLoop
+	
+	jmp		UPAddRetCode
+
+; unpackAdd parameters
+
+UPAddAddend1:		dword 0			; in - pointer to addend 1
+UPAddAddend2:		dword 0			; in - pointer to addend 2
+UPAddResult:		dword 0			; out - pointer to result
+UPAddBitsToAdd:		dword 0			; in
+UPAddRetCode:		dword 0			; in
+
+; unpackAdd variables 
+
+UPAddCarryBit:		dword 0
+UPAddTableIndex:	dword 0
+UPAddResultTable:	dword 0, 1, 1, 0, 1, 0, 0, 1		;consult truth table above for details
+UPAddCarryTable:	dword 0, 0, 0, 1, 0, 1, 1, 1
+
+
+;this version of unpack depends on the calling routine to
+;	pass parameters.
+;
+Unpack:
+	
+	load	0
+	sto		[UPcurrPos]
+	
+	load	32				;number of bits in an addressed value
+	
+UnpackLoop:
+	add		-1
+	sto		[UPfromLeft]	;update distance from big (left) end of value
+
+	load	[UPtoUnpack]	;get bit
+	shl		[UPfromLeft]
+
+	jnz		UnpackBitIsSet
+
+UnpackBitNotSet:
+	load	0				;store bit in accumulator
+	jmp		UnpackLoopEnd
+	
+UnpackBitIsSet:
+	load	-1
+	shl		[UPcurrPos]		;if set - clear this bit
+	add		[UPtoUnpack]
+	sto		[UPtoUnpack]
+	
+	load	1				;store bit in accumulator
+
+UnpackLoopEnd:
+	sto		[[UPunpacked]]	;store in unpacked value
+	
+	load	[UPunpacked]	;increment pointer address
+	add		1
+	sto		[UPunpacked]	
+	
+	load	[UPcurrPos]		;update current position
+	add		1
+	sto		[UPcurrPos]			
+	
+	load	[UPfromLeft]	;if more bits to shift
+	jnz		UnpackLoop		;end of loop
+	
+	jmp		UPretCode
+	
+;unpack Variables	
+
+UPcurrPos: 		dword 0	
+UPfromLeft:		dword 0
+UPtoUnpack:		dword 0		;value to unpack
+UPunpacked:		dword 0		;pointer to unpacked Value
+UPretCode:		dword 0		;return to specified address

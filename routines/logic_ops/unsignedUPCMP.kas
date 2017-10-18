@@ -1,0 +1,213 @@
+; UnsignedUPCMP.kas
+; unsigned comparison with unpacked values
+
+;main routine
+	
+	load	[packedVal1]			;prep for unpack of 1st value
+	sto		[UPtoUnpack]
+	
+	load	unpacked1
+	sto		[UPunpacked]
+	
+	load	[jumpCode]
+	add		PostUPCall1
+	sto		[UPretCode]
+	
+	jmp		Unpack
+	
+PostUPCall1:
+
+	load	[packedVal2]			;prep for unpack of 2nd value
+	sto		[UPtoUnpack]
+	
+	load	unpacked2
+	sto		[UPunpacked]
+	
+	load	[jumpCode]
+	add		PostUPCall2
+	sto		[UPretCode]
+	
+	jmp		Unpack
+	
+PostUPCall2:
+
+	load	unpacked1				;prep for comparison function
+	sto		[USUPCMParg1Base]
+	
+	load	unpacked2
+	sto		[USUPCMParg2Base]
+	
+	load	[valLength]
+	sto		[USUPCMPargLen]
+	
+	load	[jumpCode]
+	add		ProgEnd
+	sto		[USUPCMPretCode]
+	
+	jmp		UnsignedUPCMP
+	
+ProgEnd:
+
+	sto		[compResult]
+	halt
+	
+;general purpose variables
+
+jumpCode:	dword 0x04200000	;jump instruction code
+packedVal1:	dword 0x0005		;packed Value 1
+packedVal2:	dword 0x0007		;packed Value 2
+valLength:	dword 32
+compResult:	dword 0				; comparison result
+
+unpacked1:	dword 0, 0, 0, 0, 0, 0, 0, 0
+			dword 0, 0, 0, 0, 0, 0, 0, 0
+			dword 0, 0, 0, 0, 0, 0, 0, 0
+			dword 0, 0, 0, 0, 0, 0, 0, 0
+unpacked2:	dword 0, 0, 0, 0, 0, 0, 0, 0
+			dword 0, 0, 0, 0, 0, 0, 0, 0
+			dword 0, 0, 0, 0, 0, 0, 0, 0
+			dword 0, 0, 0, 0, 0, 0, 0, 0
+			
+UnsignedUPCMP:
+
+	load	0						; clean up (possibly) dirty variables
+	sto		[USUPCMPresult]
+	
+	load	[USUPCMPargLen]			; prepare for sign test
+	add		-1						; set current bit to highest (sign) bit position
+	sto		[USUPCMPcurrentBit]
+	
+	load	[USUPCMParg1Base]			; set pointers
+	add		[USUPCMPcurrentBit]		
+	sto		[USUPCMParg1Curr]
+	
+	load	[USUPCMParg2Base]
+	add		[USUPCMPcurrentBit]
+	sto		[USUPCMParg2Curr]
+	
+USUPCMPLoopPreCond:
+									;		start evaluation		
+	load	[USUPCMPcurrentBit]
+	jnz		USUPCMPEvalLoop
+	
+		;if there are no bits to test then return 0
+	
+	load	0
+	jmp		USUPCMPretCode
+	
+USUPCMPEvalLoop:
+	
+	add		-1	
+	sto		[USUPCMPcurrentBit]
+	
+	load	[USUPCMParg1Curr]	
+	add		-1
+	sto		[USUPCMParg1Curr]
+	
+	load	[USUPCMParg2Curr]
+	add		-1
+	sto		[USUPCMParg2Curr]
+	
+		;cases to test: 1-1 1-0 0-1 0-0
+
+	load	[[USUPCMParg1Curr]]		; test arg 1 bit
+	jnz		USUPCMPArg1Set			; if 0 then
+
+	load	[[USUPCMParg2Curr]]		;	test arg 2 bit
+	jnz		USUPCMPArg1Less
+									;	if 0 then it's case 0-0
+	jmp		USUPCMPLoopCond			;		continue loop
+	
+USUPCMPArg1Less:	
+					
+	load	-1						;	if 1 then it's case 0-1
+	sto		[USUPCMPresult]			;		result is -1
+	jmp		USUPCMPPostLoop			;		break
+	
+USUPCMPArg1Set:
+									; if 1 then
+	load	[[USUPCMParg2Curr]]		;	test arg 2 bit
+	jnz		USUPCMPLoopCond			;	if 1 then it's case 1-1
+									;		continue loop
+	load	1						;	if 0 then it's case 1-0
+	sto		[USUPCMPresult]			;		result is 1
+	jmp		USUPCMPPostLoop			;		break
+
+USUPCMPLoopCond:
+
+	load	[USUPCMPcurrentBit]
+	jnz		USUPCMPEvalLoop
+
+USUPCMPPostLoop:
+	
+	load	[USUPCMPresult]
+	jmp		USUPCMPretCode			;	return result
+
+;unpackCmp parameters
+
+USUPCMParg1Base:		dword 0		; reference to first argument
+USUPCMParg2Base:		dword 0		; reference to second argument
+USUPCMPargLen:			dword 0		; length of arguments
+USUPCMPretCode:			dword 0		; return address and instruction
+
+;unpackCmp variables
+
+USUPCMParg1Curr:		dword 0		; pointer to current position in argument 1
+USUPCMParg2Curr:		dword 0		; pointer to current position in argument 2
+USUPCMPcurrentBit:		dword 0		; index of current bit in argument
+USUPCMPresult:			dword 0		; result to return to caller
+
+;this version of unpack depends on the calling routine to
+;	pass parameters.
+;
+Unpack:
+	
+	load	0
+	sto		[UPcurrPos]
+	
+	load	32				;number of bits in an addressed value
+	
+UnpackLoop:
+	add		-1
+	sto		[UPfromLeft]	;update distance from big (left) end of value
+
+	load	[UPtoUnpack]	;get bit
+	shl		[UPfromLeft]
+
+	jnz		UnpackBitIsSet
+
+UnpackBitNotSet:
+	load	0				;store bit in accumulator
+	jmp		UnpackEnd
+	
+UnpackBitIsSet:
+	load	-1
+	shl		[UPcurrPos]		;if set - clear this bit
+	add		[UPtoUnpack]
+	sto		[UPtoUnpack]
+	
+	load	1				;store bit in accumulator
+
+UnpackEnd:
+	sto		[[UPunpacked]]	;store in unpacked value
+	
+	load	[UPunpacked]	;increment pointer address
+	add		1
+	sto		[UPunpacked]	
+	
+	load	[UPcurrPos]		;update current position
+	add		1
+	sto		[UPcurrPos]			
+	
+	load	[UPfromLeft]	;if more bits to shift
+	jnz		UnpackLoop		;end of loop
+	
+	jmp		UPretCode
+	
+;unpack Variables	
+
+UPcurrPos: 		dword 0	
+UPfromLeft:		dword 0
+UPtoUnpack:		dword 0		;value to unpack
+UPunpacked:		dword 0		;pointer to unpacked Value
+UPretCode:		dword 0		;return to specified address

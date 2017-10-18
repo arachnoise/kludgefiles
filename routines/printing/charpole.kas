@@ -1,0 +1,86 @@
+;barbershop
+
+	load	nl
+	shl		24
+	out		0
+	
+	load	setBold
+	sto		[PSstrPtr]		
+	load	[jumpBase]
+	add		begin
+	sto		[tramp]
+	jmp		PrintString
+
+begin:
+	load	[jCount]
+	
+timeloop:
+	add		-1
+	sto		[j]
+	load	[j]
+	jnz		timeloop
+
+	load	[i]
+	shl		lowestByte
+	out		0
+	
+	load	[mod]
+	jnz		final
+	
+	load	nl				;newline
+	shl		lowestByte
+	out		0
+	
+	load	lineLength		;print newline every 32 chars
+	
+final:
+	add		-1
+	sto		[mod]
+	
+	load	[i]
+	add		1
+	sto		[i]
+	
+	add		[limit]
+	jnz		begin
+	
+	in		0
+	halt
+
+PrintString:
+
+	load [[PSstrPtr]]
+	
+PSBegin:
+	out		0					;print value
+	shl		byte
+	out		0
+	shl		byte
+	out		0
+	shl		byte
+	out		0
+		
+	load 	[PSstrPtr]
+	add		1
+	sto		[PSstrPtr]
+	load	[[PSstrPtr]]
+	jnz		PSBegin
+	jmp		tramp
+
+PSstrPtr: dword 0				;string pointer
+
+nl:			equ		13
+space:		equ		32
+byte:		equ		8
+lowestByte:	equ		24
+lineLength:	equ		32
+
+i:			dword	32
+j:			dword	0			;count at 9000000 prints out app 1 char/sec
+jCount:		dword	10000		;4*9,000,000 = 36Mips on my machine
+mod:		dword	31			;that's pretty fast! :D
+limit:		dword	-256
+setBold:	dword 	"\033[1m"
+
+jumpBase:	dword	0x4200000
+tramp:		dword	0

@@ -1,0 +1,35 @@
+0000	0100001A 		load  A
+0001	02000018 		sto  parm1
+0002	0100001B 		load  B
+0003	02000019 		sto  parm2
+0004	01000017 		load  jump  instruction  code
+0005	06200008 		add  return  address
+0006	02000016 		sto  trampoline
+0007	04200013 		jump  to  routine
+0008	0200001E 		store  return  value  in  AB
+0009	0100001C 		load  C
+000A	02000018 		sto  parm1
+000B	0100001D 		load  D
+000C	02000019 		sto  parm2
+000D	01000017 		load  jump  instruction  code
+000E	06200011 		add  return  address
+000F	02000016 		sto  trampoline
+0010	04200013 		jump  to  routine
+0011	0200001F 		store  return  value  in  CD
+0012	08000000
+0013	01000018
+0014	06000019
+0015	04200016
+0016	00000000 		trampoline
+0017	04200000 		default  trampoline  value
+0018	00000000 		parm1
+0019	00000000 		parm2
+001A	00000005 		A
+001B	0000000A 		B
+001C	0000000F 		C
+001D	00000014 		D
+001E	00000000 		A+B
+001F	00000000 		C+D
+
+99999
+001A 001B 001C 001D 001E 001F

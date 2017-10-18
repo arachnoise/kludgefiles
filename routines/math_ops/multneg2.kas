@@ -1,0 +1,18 @@
+	load	[k]			;load k into memory
+	
+	mloop:
+	
+	add		-1			;decrement
+	sto		[k]			;store again
+	load	[neg]		;load number to negate
+	shl		1			;shift left 1
+	add		[temp]		;add temp
+	sto		[neg]		;store neg
+	load	[k]			;load k again
+	jnz		mloop:		;if k != 0 go to mloop
+	
+	halt
+	
+	k:		dword	32		;k loop counter
+	neg:	dword	0x7FFFFFFF	;neg	number to negate
+	temp:	dword	0x7FFFFFFF	;temp	multiplicand

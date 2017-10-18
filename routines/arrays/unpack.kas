@@ -1,0 +1,64 @@
+
+; unpack.kas
+;
+; unpacks a value into an array bit by bit
+;
+; pseudocode
+;
+; 		get bit i: shift value by distance from left side
+;			send bit to array i
+;
+
+unpack:
+	load	[UPpackedVal]
+	sto		[UPtoUnpack]
+	
+	load	0
+	sto		[UPcurrPos]
+	
+	load	32					;number of bits in an addressed value
+	
+UPLoop:
+	add		-1
+	sto		[UPfromLeft]		;update distance from big (left) end of value
+
+	load	[UPtoUnpack]		;get bit
+	shl		[UPfromLeft]
+
+	jnz		UPUPBitIsSet
+
+UPBitIsUnset:
+	load	0					;store bit in accumulator
+	jmp		UPEnd
+	
+UPUPBitIsSet:
+	load	-1
+	shl		[UPcurrPos]			;if set - clear this bit
+	add		[UPtoUnpack]
+	sto		[UPtoUnpack]
+	
+	load	1					;store bit in accumulator
+
+UPEnd:
+	lir		[UPcurrPos]			;put bit in UPunpacked[UPcurrPos]
+	sto		[UPunpacked+i]
+	
+	load	[UPcurrPos]			;update UPcurrPos
+	add		1
+	sto		[UPcurrPos]			
+	
+	load	[UPfromLeft]		;if more bits to shift
+	jnz		UPLoop				;start over
+	
+	halt
+	
+
+UPcurrPos:		dword 0	
+UPfromLeft:		dword 0
+UPtoUnpack:		dword 0			;value to unpack
+UPpackedVal:	dword 0x0005	;packed Value
+
+UPunpacked:		dword 0, 0, 0, 0, 0, 0, 0, 0
+				dword 0, 0, 0, 0, 0, 0, 0, 0
+				dword 0, 0, 0, 0, 0, 0, 0, 0
+				dword 0, 0, 0, 0, 0, 0, 0, 0

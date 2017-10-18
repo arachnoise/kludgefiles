@@ -1,0 +1,321 @@
+;don't divide by 0
+;raise an exception if it does. But How?
+
+	load	[dividend]
+	sto		[DVdividend]
+	load	[divisor]
+	sto		[DVdivisor]
+	load	[jumpBase]
+	add		PostCall1
+	sto		[DVreturn]
+	jmp		Divide
+	
+PostCall1:
+	load	[DVquotient]
+	sto		[quotient]
+	load	[DVremainder]
+	sto		[remainder]
+	halt
+	
+dividend:	dword	15			;dividend
+divisor:	dword	3			;divisor
+quotient:	dword	0			;quotient
+remainder:	dword	0			;remainder
+jumpBase:	dword	0x04200000
+
+Divide:
+	load	[DVdivisor]
+	jnz		DVNonZero
+
+	load	1
+	sto		[DVdivByZero]
+	jmp		DVreturn
+	
+DVNonZero:
+	load	0
+	sto		[DVbOneIsNeg]
+	sto		[DVquotient]
+
+	load	[DVdividend]
+	sto		[NTtoTest]
+	load	[jumpBase]
+	add		DVTestDividend
+	sto		[NTreturn]
+	jmp		NegTest
+	
+DVTestDividend:
+	jnz		DVIsNegDividend
+
+	jmp		DVPretestDivisor
+	
+DVIsNegDividend:
+	load	[DVbOneIsNeg]		;if dividend is negative
+	add		[DVboolFlag]			;flip sign flag
+	sto		[DVbOneIsNeg]
+	
+	load	[DVdividend]		;negate dividend
+	sto		[Nvalue]
+	load	[jumpBase]
+	add		DVNegateDividend
+	sto		[Nreturn]
+	jmp		Negate
+
+DVNegateDividend:
+	sto		[DVdividend]
+	
+DVPretestDivisor:
+	load	[DVdivisor]
+	sto		[NTtoTest]
+	load	[jumpBase]
+	add		DVTestDivisor
+	sto		[NTreturn]
+	jmp		NegTest
+	
+DVTestDivisor:
+	jnz		DVIsNegDivisor
+
+	load	[DVdivisor]			;if divisor is positive
+	sto		[Nvalue]			;negate divisor
+	load	[jumpBase]
+	add		DVNegateDivisor
+	sto		[Nreturn]
+	jmp		Negate
+	
+DVNegateDivisor:
+	sto		[DVdivisor]
+	jmp		DVGetDividendHO
+	
+DVIsNegDivisor:
+	load	[DVbOneIsNeg]		;if divisor is negative
+	add		[DVboolFlag]			;flip sign flag
+	sto		[DVbOneIsNeg]
+
+		;at this stage dividend is positive and divisor is negative
+		;sign flag is saved accordingly
+
+DVGetDividendHO:
+	load	[DVdividend]		;calculate HO bit of dividend
+	sto		[HOFtoTest]
+	load	0
+	sto		[HOFisNeg]
+	load	[jumpBase]
+	add		DVMarkDividendPos
+	sto		[HOFreturn]
+	jmp		HOFinder
+	
+DVMarkDividendPos:
+	sto		[DVdividendHOPos]
+	
+DVGetDivisorHO:
+	load	[DVdivisor]			;calculate HO bit of divisor
+	sto		[HOFtoTest]
+	load	1
+	sto		[HOFisNeg]
+	load	[jumpBase]
+	add		DVMarkDivisorPos
+	sto		[HOFreturn]
+	jmp		HOFinder
+
+DVMarkDivisorPos:
+	sto		[Nvalue]			;negate marker value
+	load	[jumpBase]
+	add		DVSetShiftCounter
+	sto		[Nreturn]
+	jmp		Negate	
+
+DVSetShiftCounter:
+	add		[DVdividendHOPos]	;dividend HOpos - divisor HOpos = 
+	sto		[DVshiftCounter]	;amount needed to align HO bits
+	
+	sto		[NTtoTest]			;double check to ensure we don't
+	load	[jumpBase]			;try to divide if divisor is greater
+	add		DVTestShiftCount	;than dividend
+	sto		[NTreturn]
+	jmp		NegTest
+	
+DVTestShiftCount:
+	jnz		DVEnd
+	
+	load	[DVshiftCounter]
+	add		1
+	
+DVDivisionLoop:
+	add		-1
+	sto		[DVshiftCounter]
+	
+	load	[DVquotient]		;shift result left by one bit
+	shl		1
+	sto		[DVquotient]
+
+	load	[DVdivisor]
+	shl		[DVshiftCounter]	;bit shift divisor so that its HO bit aligns with dividend HO bit
+	add		[DVdividend]		;add modified divisor to dividend
+	sto		[DVworkingVal]
+	
+	sto		[NTtoTest]
+	load	[jumpBase]
+	add		DVTestPartialSum
+	sto		[NTreturn]			;check to see if result is negative
+	jmp		NegTest				;a negative result implies divisor is greater than dividend
+
+DVTestPartialSum:
+	jnz		DVDivLoopEnd
+	
+	load	[DVworkingVal]		;if result is positive
+	sto		[DVdividend]		;save dividend
+	
+	load	[DVquotient]		;add 1 to result
+	add		1
+	sto		[DVquotient]
+	
+DVDivLoopEnd:
+	load	[DVshiftCounter]	;subtract bit shift counter by 1 and save it
+	jnz		DVDivisionLoop
+
+	load	[DVbOneIsNeg]		;if negative then quotient must be negative
+	jnz		DVDiffSigns
+
+	jmp		DVEnd
+	
+DVDiffSigns:
+	load	[DVquotient]
+	sto		[Nvalue]
+	load	[jumpBase]
+	add		DVNegQuotient
+	sto		[Nreturn]
+	jmp		Negate
+
+DVNegQuotient:
+	sto		[DVquotient]
+	
+DVEnd:
+	load	[DVdividend]
+	sto		[DVremainder]
+	
+	load	[DVquotient]
+DVreturn:
+	jmp		0xFFFF				;DVreturn
+
+DVdividend:		dword	0
+DVdivisor:		dword	0
+DVquotient:		dword	0
+DVremainder:	dword	0
+DVworkingVal:	dword	0
+DVbOneIsNeg:	dword	0
+DVdividendHOPos: dword	0
+DVdivisorHOPos:	dword	0
+DVshiftCounter:	dword	0
+DVdivByZero:	dword	0
+DVboolFlag:		dword	0x80000000
+
+NegTest:	
+	load	31
+	sto		[NTfromLeft]
+	load	0
+	sto		[NTfromRight]
+	
+NTLoop:
+	load	[NTtoTest]
+	shl		[NTfromLeft]		;shl
+	jnz		NTBitSet
+	
+NTBitUnset:
+	jmp		NTEnd
+	
+NTBitSet:
+	load	-1
+	shl		[NTfromRight]
+	add		[NTtoTest]
+	sto		[NTtoTest]
+
+NTEnd:
+	load	[NTfromRight]
+	add		1
+	sto		[NTfromRight]
+	load	[NTfromLeft]
+	add		-1
+	sto		[NTfromLeft]
+	jnz		NTLoop
+	
+	load	[NTtoTest]
+	
+NTreturn:		dword	0		;NTtoReturn
+
+NTfromLeft:		dword	0		;position relative to HO bit
+NTfromRight:	dword	0		;position relative to LO bit
+NTtoTest:		dword	0		;NTtoTest
+
+Negate:
+	load	[Nvalue]
+	sto		[Nmult]
+	load	32
+	
+NLoop:
+	add		-1
+	sto		[Ncounter]
+	load	[Nvalue]
+	shl		1
+	add		[Nmult]
+	sto		[Nvalue]
+	load	[Ncounter]
+	jnz		NLoop
+
+	load	[Nvalue]
+
+Nreturn:	dword	0
+	
+Nvalue:		dword	0			;Nvalue
+Nmult:		dword	0			;N old value
+Ncounter:	dword	0			;N counter
+
+HOFinder:
+	load	-1
+	sto		[HOFresult]
+	load	0
+	sto		[HOFfromRight]
+	
+	load	32
+	
+HOFLoop:
+	add		-1
+	sto		[HOFfromLeft]
+	load	[HOFtoTest]
+	shl		[HOFfromLeft]
+	jnz		HOFBitSet
+	
+HOFBitUnset:
+	load	[HOFisNeg]
+	jnz		HOFSaveResult
+	
+	jmp		HOFEnd
+	
+HOFBitSet:
+	load	-1
+	shl		[HOFfromRight]
+	add		[HOFtoTest]
+	sto		[HOFtoTest]
+	
+	load	[HOFisNeg]
+	jnz		HOFEnd
+
+HOFSaveResult:
+	load	[HOFfromRight]
+	sto		[HOFresult]
+
+HOFEnd:
+	load	[HOFfromRight]
+	add		1
+	sto		[HOFfromRight]
+	load	[HOFfromLeft]
+	jnz		HOFLoop
+	
+	load	[HOFresult]
+	
+HOFreturn:		
+	jmp		0xFFFF				;HOFtoReturn
+
+HOFfromLeft:	dword	0		;position relative to HO bit
+HOFfromRight:	dword	0		;position relative to LO bit
+HOFisNeg:			dword	0		;HOFisNegative
+HOFtoTest:		dword	0		;HOFtoTest
+HOFresult:		dword	0		;HOFresult

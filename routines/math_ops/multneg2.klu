@@ -1,0 +1,18 @@
+0000	0100000A 		load  k  into  memory
+
+0001	0620FFFF 	mloop:	decrement
+0002	0200000A 		store  again
+0003	0100000B 		load  number  to  negate
+0004	07200001 		shift  left  1
+0005	0600000C 		add  temp
+0006	0200000B 		store  neg
+0007	0100000A 		load  k  again
+0008	05200001 		if  k  !=  0  go  to  mloop
+0009	08000000
+
+000A	0000001F 		k  loop  counter
+000B	7FFFFFFF 		neg  number  to  negate
+000C	7FFFFFFF 		temp  multiplicand
+
+99999
+000A	000B	000C

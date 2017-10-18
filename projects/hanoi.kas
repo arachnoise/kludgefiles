@@ -1,0 +1,257 @@
+;tower of hanoi test
+;
+;solves the tower of hanoi puzzle
+;and prints the solution to a buffer
+;
+;hanoi pseudocode:
+;
+;movetower(i, start, int, goal)
+;   if(i > 1)
+;		movetower(i-1, start, goal, int)
+;		moveblock(i, goal)
+;		movetower(i-1, int, start, goal)
+;	else
+;		moveblock(i, goal)
+;
+;   return
+;
+;hanoi stackframe
+;
+;	0	return address
+;	1	i
+;	2	start
+;	3	int
+;	4	goal
+;
+
+main:
+	load	printbuf
+	sto		[printBufPtr]
+	
+	load	main1stRet			;load return address
+	sto		[[stackPtr]]		;stackPtr + 0 : return addrese
+	
+	load	[stackPtr]
+	add		1
+	sto		[tempStPtr1]
+	load	[i]					;load 1st parm i	
+	sto		[[tempStPtr1]]		;stackPtr + 1: i
+	
+	load	[tempStPtr1]
+	add		1
+	sto		[tempStPtr1]
+	load	start				;load 2nd parm start
+	sto		[[tempStPtr1]]		;stackPtr + 2: start
+	
+	load	[tempStPtr1]
+	add		1
+	sto		[tempStPtr1]
+	load	int					;load 3rd parm int
+	sto		[[tempStPtr1]]		;stackPtr + 3: int
+	
+	load	[tempStPtr1]
+	add		1
+	sto		[tempStPtr1]
+	load	goal				;load 4th parm goal
+	sto		[[tempStPtr1]]		;stackPtr + 4: goal
+	
+	jmp		hanoi
+
+main1stRet:
+	halt
+	
+hanoi:
+	load	[stackPtr]
+	add		1
+	sto		[tempStPtr1]
+	load	[[tempStPtr1]]		;stackPtr + 1 is i
+	add		-1
+	jnz		hanoi1stCall		;if(i != 1) then jmp
+	jmp		hanoiTerm			;else terminal case
+	
+hanoi1stCall:
+	load	[stackPtr]
+	add		5					;Five is stack frame size
+	sto		[stackPtr]			;update stack pointer
+	
+	load	hanoi1stRet			;load return address
+	sto		[[stackPtr]]		;stackPtr + 0 : return address
+	
+	load	[stackPtr]
+	add		-4
+	sto		[tempStPtr1]		;old i is at stackPtr - 4
+	load	[stackPtr]
+	add		1
+	sto		[tempStPtr2]		;i is at stackPtr + 1
+	load	[[tempStPtr1]]
+	add		-1
+	sto		[[tempStPtr2]]		;i = oldi - 1
+	
+	load	[stackPtr]
+	add		-3					;old start is at stackPtr - 3
+	sto		[tempStPtr1]
+	load	[stackPtr]
+	add		2
+	sto		[tempStPtr2]		;start is at stackPtr + 2
+	load	[[tempStPtr1]]
+	sto		[[tempStPtr2]]		;start = oldstart
+	
+	load	[stackPtr]
+	add		-1					;old goal is at stackPtr - 1
+	sto		[tempStPtr1]
+	load	[stackPtr]
+	add		3
+	sto		[tempStPtr2]		;int is at stackPtr + 3
+	load	[[tempStPtr1]]
+	sto		[[tempStPtr2]]		;int = old goal
+	
+	load	[stackPtr]
+	add		-2					;old int is at stackPtr - 2
+	sto		[tempStPtr1]
+	load	[stackPtr]
+	add		4
+	sto		[tempStPtr2]		;goal is at stackPtr + 4
+	load	[[tempStPtr1]]
+	sto		[[tempStPtr2]]		;goal = old int
+	
+	jmp		hanoi
+
+hanoi1stRet:
+	load	[stackPtr]
+	add		-5					;Five is stack frame size
+	sto		[stackPtr]			;update stack pointer
+	
+	load	[stackPtr]
+	add		1
+	sto		[tempStPtr1]		;i is stackPtr + 1
+	load	[[printBufPtr]]		
+	shl		4
+	add		[[tempStPtr1]]		;store disc number
+	sto		[[printBufPtr]]		;into shifted buffer
+	
+	load	[stackPtr]
+	add		4
+	sto		[tempStPtr1]		;goal is stackPtr + 4
+	load	[[printBufPtr]]		
+	shl		4
+	add		[[tempStPtr1]]		;store tower move
+	sto		[[printBufPtr]]		;into shifted buffer
+	
+	load	[printCount]
+	add		-1
+	sto		[printCount]
+	jnz		hanoi2ndCall
+	
+	load	4					;pack 4 values per address
+	sto		[printCount]
+	load	1
+	add		[printBufPtr]
+	sto		[printBufPtr]		;update buffer pointer
+
+hanoi2ndCall:
+	load	[stackPtr]
+	add		5					;Five is stack frame size
+	sto		[stackPtr]			;update stack pointer
+	
+	load	hanoi2ndRet			;load return address
+	sto		[[stackPtr]]		;stackPtr + 0 : return address
+
+	load	[stackPtr]
+	add		-4
+	sto		[tempStPtr1]		;old i is at stackPtr - 4
+	load	[stackPtr]
+	add		1
+	sto		[tempStPtr2]		;i is at stackPtr + 1
+	load	[[tempStPtr1]]
+	add		-1
+	sto		[[tempStPtr2]]		;i = oldi - 1
+	
+		
+	load	[stackPtr]
+	add		-2					;old int is at stackPtr - 2
+	sto		[tempStPtr1]
+	load	[stackPtr]
+	add		2
+	sto		[tempStPtr2]		;start is at stackPtr + 2
+	load	[[tempStPtr1]]
+	sto		[[tempStPtr2]]		;start = oldint
+	
+	load	[stackPtr]
+	add		-3					;old start is at stackPtr - 3
+	sto		[tempStPtr1]
+	load	[stackPtr]
+	add		3
+	sto		[tempStPtr2]		;int is at stackPtr + 3
+	load	[[tempStPtr1]]
+	sto		[[tempStPtr2]]		;int = oldstart
+	
+	load	[stackPtr]
+	add		-1					;old goal is at stackPtr - 1
+	sto		[tempStPtr1]
+	load	[stackPtr]
+	add		4
+	sto		[tempStPtr2]		;goal is at stackPtr + 4
+	load	[[tempStPtr1]]
+	sto		[[tempStPtr2]]		;goal = old int
+	
+	jmp		hanoi
+	
+hanoi2ndRet:
+	load	[stackPtr]
+	add		-5					;Five is stack frame size
+	sto		[stackPtr]			;update stack pointer
+	jmp		hanoiEnd
+	
+hanoiTerm:
+	load	[stackPtr]
+	add		1
+	sto		[tempStPtr1]		;i is stackPtr + 1
+	load	[[printBufPtr]]		
+	shl		4
+	add		[[tempStPtr1]]		;store disc number
+	sto		[[printBufPtr]]		;into shifted buffer
+	
+	load	[stackPtr]
+	add		4
+	sto		[tempStPtr1]		;goal is stackPtr + 4
+	load	[[printBufPtr]]		
+	shl		4
+	add		[[tempStPtr1]]		;store tower move
+	sto		[[printBufPtr]]		;into shifted buffer
+	
+	load	[printCount]
+	add		-1
+	sto		[printCount]
+	
+	jnz		hanoiEnd
+	
+	load	4					;pack 4 values per address
+	sto		[printCount]
+	load	1
+	add		[printBufPtr]
+	sto		[printBufPtr]		;update buffer pointer
+	
+hanoiEnd:
+	load	[[stackPtr]]		;load return address
+	add		[jumpBase]			;add jmp opcode
+	sto		[tramp]				;store at trampoline
+	jmp		tramp				;jump to trampoline
+	
+;function handling
+;
+jumpBase:	dword	0x04200000
+tramp:		dword	0			;trampoline
+stackPtr:	dword	0xF000		;Stack Pointer
+tempStPtr1:	dword	0			;tempStPtr1
+tempStPtr2:	dword	0			;tempStPtr2
+
+;hanoi variables
+;
+i:			dword	3			;i: tower height
+start:		equ		0xA			;starting peg
+int:		equ		0xB			;intermediate peg
+goal:		equ		0xC			;goal peg
+printCount:	dword	4			;print counter
+printBufPtr: dword   0			;printBufPtr
+printbuf:	dword	0			;print buffer
+

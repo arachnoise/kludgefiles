@@ -1,0 +1,22 @@
+00	0100004C			load	k
+
+01	0620FFFF	mloop:	add 	-1
+02	0200004C			sto 	k
+03	0300004C			lir		k
+04	0100004D			load 	neg
+05	07200001			shl		1
+06 	0600004E			add 	temp
+07	0200004D			sto		neg
+08	02800050			sto		a[k]
+09	0100004C			load	k
+0A	05000001			jnz		mloop
+
+0B  08000000
+
+4C	0000001F			k
+4D	00000FFF			neg =
+4E	00000FFF			temp = 
+50	00000000			a[0]
+
+99999
+4D 4E 50 51 52 53 54 55 56 57 58 59 5A 5B 5C 5D 5E 5F 60 61 62 63 64 65 66 67 68 69 6A 6B 6C 6D 6E 6F

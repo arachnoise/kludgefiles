@@ -1,0 +1,1156 @@
+;itoa.kas
+;
+;turns a decimal number into a character combination
+;kludgey as FUCK. Uses supporting routines!
+;Doing something as simple as this takes 1000 lines of code? HOW?!
+;
+;Brent Mercer
+;August 02, 2015
+
+;algorithm
+;divide integer value by 10
+;store remainder in char value + '0'
+;repeat until it divides to 0
+;
+;cases: positive up to 2^31-1
+;		negative up to 2^31
+;Use up to 10 decimal digits to buffer output
+
+	load	[myVal]
+	sto		[I2AWorkVal]
+	load	[jumpBase]
+	add		TheEnd
+	sto		[I2AReturn]
+	jmp		Itoa
+	
+TheEnd:
+	halt
+myVal:		dword	12345			;value goes here
+jumpBase:	dword	0x04200000
+
+Itoa:
+	load	0						;clear buffer
+	sto		[I2ABuffer]
+	sto		[I2ABuffer+1]
+	sto		[I2ABuffer+2]
+	sto		[I2ADivCnt]
+	
+	lir		I2ABufSize-1
+	load	I2ABufSize-1
+	sto		[I2ABufPos]
+	
+	load	I2AMemSize+1
+	sto		[I2ABufCnt]
+	
+	load	[I2AWorkVal]
+	jnz		I2ADivLoop
+	
+	add		I2AZero					;zero case
+	sto		[I2ABuffer]
+	jmp		I2AReturn
+	
+I2ADivLoop:
+	sto		[DVdividend]
+	load	I2ADivVal
+	sto		[DVdivisor]
+	load	[jumpBase]
+	add		I2ABufCheck
+	sto		[DVreturn]
+	jmp		Divide
+
+I2ABufCheck:
+	load	[I2ADivCnt]
+	add		1
+	sto		[I2ADivCnt]
+	
+	load	[I2ABufCnt]
+	add		-1
+	sto		[I2ABufCnt]
+	jnz		I2ADivLoopPost
+	
+	load	I2AMemSize			;reset buf counter
+	sto		[I2ABufCnt]
+	
+	load	[I2ABufPos]
+	add		-1
+	sto		[I2ABufPos]
+	lir		[I2ABufPos]
+	
+	load	0
+	sto		[I2AShPos]
+	
+I2ADivLoopPost:
+	load	[DVremainder]
+	add		I2AZero
+	shl		[I2AShPos]
+	add		[I2ABuffer+i]
+	sto		[I2ABuffer+i]
+	
+	load	[I2AShPos]
+	add		I2AByte
+	sto		[I2AShPos]
+
+	load	[DVquotient]
+	sto		[I2AWorkVal]
+	jnz		I2ADivLoop
+	
+	load	[I2ADivCnt]
+	sto		[Nvalue]
+	load	[jumpBase]			;prepare to shift values to head of array
+	add		I2AShPrep
+	sto		[Nreturn]
+	jmp		Negate
+
+I2AShPrep:
+	add		I2AMaxCh			;shift value is (12 - DivCnt) * 8
+	shl		I2AChShift			
+	
+	sto		[MBtoShift]
+	load	I2ABufSize
+	sto		[MBarrSize]
+	load	I2ABuffer
+	sto		[MBptrArray]
+	load	[jumpBase]
+	add		I2AEnd
+	sto		[MBreturn]
+	jmp		MBShiftLeft
+
+I2AEnd:
+
+I2AReturn:	dword	0				
+
+I2AWorkVal:	dword	0				;atoi working value
+
+I2ABuffer:	dword	0, 0, 0			;atoi buffer
+I2ABufCnt:	dword	0
+I2ADivCnt:	dword	0				;atoi division counter
+I2ABufPos:	dword	0
+I2AShPos:	dword	0
+
+I2ABufSize:	equ		3
+I2AMemSize: equ		4
+I2AChShift:	equ		3
+I2AMaxCh:	equ		12
+I2ADivVal:	equ		10
+I2AZero: 	equ		48
+I2AByte:	equ		8
+
+Divide:
+	load	[DVdivisor]
+	jnz		DVNonZero
+
+	load	1
+	sto		[DVdivByZero]
+	jmp		DVreturn
+	
+DVNonZero:
+	load	0
+	sto		[DVbOneIsNeg]
+	sto		[DVquotient]
+
+	load	[DVdividend]
+	sto		[NTtoTest]
+	load	[jumpBase]
+	add		DVTestDividend
+	sto		[NTreturn]
+	jmp		NegTest
+	
+DVTestDividend:
+	jnz		DVIsNegDividend
+
+	jmp		DVPretestDivisor
+	
+DVIsNegDividend:
+	load	[DVbOneIsNeg]		;if dividend is negative
+	add		[DVboolFlag]			;flip sign flag
+	sto		[DVbOneIsNeg]
+	
+	load	[DVdividend]		;negate dividend
+	sto		[Nvalue]
+	load	[jumpBase]
+	add		DVNegateDividend
+	sto		[Nreturn]
+	jmp		Negate
+
+DVNegateDividend:
+	sto		[DVdividend]
+	
+DVPretestDivisor:
+	load	[DVdivisor]
+	sto		[NTtoTest]
+	load	[jumpBase]
+	add		DVTestDivisor
+	sto		[NTreturn]
+	jmp		NegTest
+	
+DVTestDivisor:
+	jnz		DVIsNegDivisor
+
+	load	[DVdivisor]			;if divisor is positive
+	sto		[Nvalue]			;negate divisor
+	load	[jumpBase]
+	add		DVNegateDivisor
+	sto		[Nreturn]
+	jmp		Negate
+	
+DVNegateDivisor:
+	sto		[DVdivisor]
+	jmp		DVGetDividendHO
+	
+DVIsNegDivisor:
+	load	[DVbOneIsNeg]		;if divisor is negative
+	add		[DVboolFlag]			;flip sign flag
+	sto		[DVbOneIsNeg]
+
+		;at this stage dividend is positive and divisor is negative
+		;sign flag is saved accordingly
+
+DVGetDividendHO:
+	load	[DVdividend]		;calculate HO bit of dividend
+	sto		[HOFtoTest]
+	load	0
+	sto		[HOFisNeg]
+	load	[jumpBase]
+	add		DVMarkDividendPos
+	sto		[HOFreturn]
+	jmp		HOFinder
+	
+DVMarkDividendPos:
+	sto		[DVdividendHOPos]
+	
+DVGetDivisorHO:
+	load	[DVdivisor]			;calculate HO bit of divisor
+	sto		[HOFtoTest]
+	load	1
+	sto		[HOFisNeg]
+	load	[jumpBase]
+	add		DVMarkDivisorPos
+	sto		[HOFreturn]
+	jmp		HOFinder
+
+DVMarkDivisorPos:
+	sto		[Nvalue]			;negate marker value
+	load	[jumpBase]
+	add		DVSetShiftCounter
+	sto		[Nreturn]
+	jmp		Negate	
+
+DVSetShiftCounter:
+	add		[DVdividendHOPos]	;dividend HOpos - divisor HOpos = 
+	sto		[DVshiftCounter]	;amount needed to align HO bits
+	
+	sto		[NTtoTest]			;double check to ensure we don't
+	load	[jumpBase]			;try to divide if divisor is greater
+	add		DVTestShiftCount	;than dividend
+	sto		[NTreturn]
+	jmp		NegTest
+	
+DVTestShiftCount:
+	jnz		DVEnd
+	
+	load	[DVshiftCounter]
+	add		1
+	
+DVDivisionLoop:
+	add		-1
+	sto		[DVshiftCounter]
+	
+	load	[DVquotient]		;shift result left by one bit
+	shl		1
+	sto		[DVquotient]
+
+	load	[DVdivisor]
+	shl		[DVshiftCounter]	;bit shift divisor so that its HO bit aligns with dividend HO bit
+	add		[DVdividend]		;add modified divisor to dividend
+	sto		[DVworkingVal]
+	
+	sto		[NTtoTest]
+	load	[jumpBase]
+	add		DVTestPartialSum
+	sto		[NTreturn]			;check to see if result is negative
+	jmp		NegTest				;a negative result implies divisor is greater than dividend
+
+DVTestPartialSum:
+	jnz		DVDivLoopEnd
+	
+	load	[DVworkingVal]		;if result is positive
+	sto		[DVdividend]		;save dividend
+	
+	load	[DVquotient]		;add 1 to result
+	add		1
+	sto		[DVquotient]
+	
+DVDivLoopEnd:
+	load	[DVshiftCounter]	;subtract bit shift counter by 1 and save it
+	jnz		DVDivisionLoop
+
+	load	[DVbOneIsNeg]		;if negative then quotient must be negative
+	jnz		DVDiffSigns
+
+	jmp		DVEnd
+	
+DVDiffSigns:
+	load	[DVquotient]
+	sto		[Nvalue]
+	load	[jumpBase]
+	add		DVNegQuotient
+	sto		[Nreturn]
+	jmp		Negate
+
+DVNegQuotient:
+	sto		[DVquotient]
+	
+DVEnd:
+	load	[DVdividend]
+	sto		[DVremainder]
+	
+	load	[DVquotient]
+DVreturn:
+	jmp		0xFFFF				;DVreturn
+
+DVdividend:		dword	0
+DVdivisor:		dword	0
+DVquotient:		dword	0
+DVremainder:	dword	0
+DVworkingVal:	dword	0
+DVbOneIsNeg:	dword	0
+DVdividendHOPos: dword	0
+DVdivisorHOPos:	dword	0
+DVshiftCounter:	dword	0
+DVdivByZero:	dword	0
+DVboolFlag:		dword	0x80000000
+
+NegTest:	
+	load	31
+	sto		[NTfromLeft]
+	load	0
+	sto		[NTfromRight]
+	
+NTLoop:
+	load	[NTtoTest]
+	shl		[NTfromLeft]		;shl
+	jnz		NTBitSet
+	
+NTBitUnset:
+	jmp		NTEnd
+	
+NTBitSet:
+	load	-1
+	shl		[NTfromRight]
+	add		[NTtoTest]
+	sto		[NTtoTest]
+
+NTEnd:
+	load	[NTfromRight]
+	add		1
+	sto		[NTfromRight]
+	load	[NTfromLeft]
+	add		-1
+	sto		[NTfromLeft]
+	jnz		NTLoop
+	
+	load	[NTtoTest]
+	
+NTreturn:		dword	0		;NTtoReturn
+
+NTfromLeft:		dword	0		;position relative to HO bit
+NTfromRight:	dword	0		;position relative to LO bit
+NTtoTest:		dword	0		;NTtoTest
+
+Negate:
+	load	[Nvalue]
+	sto		[Nmult]
+	load	32
+	
+NLoop:
+	add		-1
+	sto		[Ncounter]
+	load	[Nvalue]
+	shl		1
+	add		[Nmult]
+	sto		[Nvalue]
+	load	[Ncounter]
+	jnz		NLoop
+
+	load	[Nvalue]
+
+Nreturn:	dword	0
+	
+Nvalue:		dword	0			;Nvalue
+Nmult:		dword	0			;N old value
+Ncounter:	dword	0			;N counter
+
+HOFinder:
+	load	-1
+	sto		[HOFresult]
+	load	0
+	sto		[HOFfromRight]
+	
+	load	32
+	
+HOFLoop:
+	add		-1
+	sto		[HOFfromLeft]
+	load	[HOFtoTest]
+	shl		[HOFfromLeft]
+	jnz		HOFBitSet
+	
+HOFBitUnset:
+	load	[HOFisNeg]
+	jnz		HOFSaveResult
+	
+	jmp		HOFEnd
+	
+HOFBitSet:
+	load	-1
+	shl		[HOFfromRight]
+	add		[HOFtoTest]
+	sto		[HOFtoTest]
+	
+	load	[HOFisNeg]
+	jnz		HOFEnd
+
+HOFSaveResult:
+	load	[HOFfromRight]
+	sto		[HOFresult]
+
+HOFEnd:
+	load	[HOFfromRight]
+	add		1
+	sto		[HOFfromRight]
+	load	[HOFfromLeft]
+	jnz		HOFLoop
+	
+	load	[HOFresult]
+	
+HOFreturn:		
+	jmp		0xFFFF				;HOFtoReturn
+
+HOFfromLeft:	dword	0		;position relative to HO bit
+HOFfromRight:	dword	0		;position relative to LO bit
+HOFisNeg:		dword	0		;HOFisNegative
+HOFtoTest:		dword	0		;HOFtoTest
+HOFresult:		dword	0		;HOFresult
+
+MBShiftLeft:
+	load	[MBtoShift]
+	jnz		MBNonZeroShift			;toShift is not zero?
+	
+	jmp		MBreturn
+	
+MBNonZeroShift:				
+	sto		[NTtoTest]
+	load	[jumpBase]
+	add		MBTestPosShift
+	sto		[NTreturn]
+	jmp		NegTest
+	
+MBTestPosShift:
+	load	[NTtoTest]				;is toShift greater than zero
+	jnz		MBreturn
+	
+	load	[MBarrSize]
+	jnz		MBNonZeroArrSize		;array size not zero?
+
+	jmp		MBreturn
+	
+MBNonZeroArrSize:
+	add		-1
+	jnz		MBMultibyteArr			;array size greater than 1?
+
+	jmp		MBShiftSingle			;if not then work on one cell
+	
+MBMultibyteArr:
+	load	0
+	sto		[MBbigShiftVal]
+	sto		[MBnegBigShift]
+	
+	load	[MBtoShift]
+	add		-32
+	jnz		MBTestBigShift1
+
+	jmp		MBBigShift
+	
+MBTestBigShift1:
+	sto		[NTtoTest]				;if toShift is greater than size of dword (32 bits)
+	load	[jumpBase]
+	add		MBTestBigShift2
+	sto		[NTreturn]
+	jmp		NegTest
+	
+MBTestBigShift2:
+	load	[NTtoTest]
+	jnz		MBSmallShift
+
+MBBigShift:
+	load	[MBtoShift]				;Big shift here
+	sto		[SHRworkingVal]
+	load	5						;toShift >> 5 goes to array shifting routine
+	sto		[SHRshiftYet]
+	load	[jumpBase]
+	add		MBSaveShiftVal
+	sto		[SHRreturn]
+	jmp		ShiftRight
+	
+MBSaveShiftVal:
+	sto		[MBbigShiftVal]
+
+	sto		[Nvalue]
+	load	[jumpBase]
+	add		MBTestArrSize1			;arrSize - shiftVal must be greater than 0
+	sto		[Nreturn]
+	jmp		Negate
+
+MBTestArrSize1:
+	sto		[MBnegBigShift]
+	add		[MBarrSize]
+	
+	jnz		MBTestArrSize2
+	
+	jmp		MBclearArr
+
+MBTestArrSize2:
+	sto		[NTtoTest]
+	load	[jumpBase]
+	add		MBTestArrSize3			;check that it is bigger
+	sto		[NTreturn]				
+	jmp		NegTest
+
+MBTestArrSize3:
+	load	[NTtoTest]				;if shiftVal too big,
+	jnz		MBclearArr				;clear the array instead of shifting
+	
+	load	[MBbigShiftVal]			;prepare to shift array cell by cell
+	sto		[ARSLtoShift]
+	load	[MBptrArray]
+	sto		[ARSLarrPtr]
+	load	[MBarrSize]
+	sto		[ARSLarrSize]
+	load	[jumpBase]
+	add		MBMaskShiftVal
+	sto		[ARSLreturn]
+	jmp		ArrShiftLeft
+
+MBMaskShiftVal:
+	
+	load	[MBtoShift]
+	sto		[ANDval1]
+	load	0x1F					;bit mask for all under 32
+	sto		[ANDval2]
+	load	[jumpBase]
+	add		MBSetSmallShift
+	sto		[ANDreturn]
+	jmp		And
+	
+MBSetSmallShift:
+	sto		[MBtoShift]
+	jnz		MBSmallShift
+	
+	jmp		MBreturn
+	
+MBclearArr:
+	load	[MBptrArray]
+	sto		[MBptrVal1]
+
+	load	0
+	sto		[MBarrCount]
+	
+MBclearLoop:
+	load	0
+	sto		[[MBptrVal1]]
+	
+	load	[MBptrVal1]
+	add		1
+	sto		[MBptrVal1]
+	
+	load	[MBarrCount]
+	add		-1
+	sto		[MBarrCount]
+	add		[MBarrSize]
+	
+	jnz		MBclearLoop
+	
+	jmp		MBreturn
+
+MBSmallShift:
+	load	[MBptrArray]			;load values
+	sto		[MBptrVal1]
+	add		1
+	sto		[MBptrVal2]
+	
+	load	[MBarrSize]
+;	add		[MBnegBigShift]
+	add		-1
+	sto		[MBlimit]
+	
+	jnz		MBShiftMultiple
+
+MBShiftSingle:
+	load	[[MBptrArray]]			;if not, just work on single cell
+	shl		[MBtoShift]
+	sto		[[MBptrArray]]
+	jmp		MBreturn
+	
+MBShiftMultiple:
+	load	0
+	sto		[MBarrCount]
+	
+MBUnpackShiftLoop:
+	load	[[MBptrVal1]]			;unpack values
+	sto		[UPpackedVal]
+	load	MBbuf1
+	sto		[UPptrUnpacked]
+	load	[jumpBase]
+	add		MBUnpack2nd
+	sto		[UPreturn]
+	jmp		Unpack
+	
+MBUnpack2nd:
+	load	[[MBptrVal2]]
+	sto		[UPpackedVal]
+	load	MBbuf2
+	sto		[UPptrUnpacked]
+	load	[jumpBase]
+	add		MBShift
+	sto		[UPreturn]
+	jmp		Unpack
+	
+MBShift:
+	load	[MBtoShift]
+	sto		[USHtoShift]
+	load	MBbuf1
+	sto		[USHbufPtr]
+	load	[jumpBase]
+	add		MBCarry
+	sto		[USHreturn]
+	jmp		UnpackShl
+	
+MBCarry:
+	load	[MBtoShift]
+	sto		[UPCtoShift]
+	load	MBbuf2
+	sto		[UPCsrcPtr]
+	load	MBbuf1
+	sto		[UPCdestPtr]
+	load	[jumpBase]
+	add		MBPack
+	sto		[UPCreturn]
+	jmp		unpackCLeft
+	
+MBPack:
+	load	MBbuf1
+	sto		[PKptrUnpacked]
+	load	[jumpBase]
+	add		MBUnpackShiftLoopEnd
+	sto		[PKreturn]
+	jmp		Pack
+	
+MBUnpackShiftLoopEnd:
+	load	[PKpackedVal]
+	sto		[[MBptrVal1]]
+	
+	load	[MBptrVal1]
+	add		1
+	sto		[MBptrVal1]
+	
+	load	[MBptrVal2]
+	add		1
+	sto		[MBptrVal2]
+	
+	load	[MBarrCount]
+	add		-1
+	sto		[MBarrCount]
+	add		[MBlimit]
+	jnz		MBUnpackShiftLoop	
+
+	
+	load	[[MBptrVal1]]			;unpack last value
+	sto		[UPpackedVal]
+	load	MBbuf1
+	sto		[UPptrUnpacked]
+	load	[jumpBase]
+	add		MBLastShift
+	sto		[UPreturn]
+	jmp		Unpack
+	
+MBLastShift:
+	load	[MBtoShift]
+	sto		[USHtoShift]
+	load	MBbuf1
+	sto		[USHbufPtr]
+	load	[jumpBase]
+	add		MBLastPack
+	sto		[USHreturn]
+	jmp		UnpackShl
+
+MBLastPack:
+	load	MBbuf1
+	sto		[PKptrUnpacked]
+	load	[jumpBase]
+	add		MBEnd
+	sto		[PKreturn]
+	jmp		Pack
+
+MBEnd:
+	load	[PKpackedVal]
+	sto		[[MBptrVal1]]
+	
+MBreturn:	dword	0
+
+	;parameter list
+MBptrArray:		dword	0		;MBptrArray
+MBarrSize:		dword 	0		;MBarrSize
+MBtoShift:		dword	0		;MBtoShift
+
+MBshiftMask:	dword	0x0000001F
+MBbigShiftVal:	dword	0		;MBbigShVal
+MBnegBigShift:	dword	0		;MBnegBigSh
+MBptrVal1:		dword	0		;MBptrVal1
+MBptrVal2:		dword	0		;MBptrVal2
+MBarrCount:		dword	0
+MBlimit:		dword	0
+
+MBbuf1:			dword	0, 0, 0, 0, 0, 0, 0, 0
+				dword	0, 0, 0, 0, 0, 0, 0, 0
+				dword	0, 0, 0, 0, 0, 0, 0, 0
+				dword	0, 0, 0, 0, 0, 0, 0, 0
+			
+MBbuf2:			dword	0, 0, 0, 0, 0, 0, 0, 0
+				dword	0, 0, 0, 0, 0, 0, 0, 0
+				dword	0, 0, 0, 0, 0, 0, 0, 0
+				dword	0, 0, 0, 0, 0, 0, 0, 0
+
+ArrShiftLeft:
+	load	[ARSLtoShift]
+	jnz		ARSLNonZeroShift
+	
+	jmp		ARSLreturn
+
+ARSLNonZeroShift:
+	sto		[Nvalue]
+	load	ARSLPrep
+	add		[jumpBase]
+	sto		[Nreturn]
+	jmp		Negate
+	
+ARSLPrep:
+	add		[ARSLarrSize]
+	sto		[ARSLarrCount]
+	
+	load	[ARSLarrPtr]
+	sto		[ARSLdestPtr]
+	
+	add		[ARSLtoShift]
+	sto		[ARSLsrcPtr]
+
+ARSLShiftLoop:
+	load	[[ARSLsrcPtr]]
+	sto		[[ARSLdestPtr]]
+	
+	load	[ARSLsrcPtr]
+	add		1
+	sto		[ARSLsrcPtr]
+	
+	load	[ARSLdestPtr]
+	add		1
+	sto		[ARSLdestPtr]
+	
+	load	[ARSLarrCount]
+	add		-1
+	sto		[ARSLarrCount]
+	jnz		ARSLShiftLoop
+	
+	load	0
+	sto		[ARSLarrCount]
+
+ARSLZeroLoop:
+	load	0
+	sto		[[ARSLdestPtr]]
+
+	load	[ARSLdestPtr]
+	add		1
+	sto		[ARSLdestPtr]
+	
+	load	[ARSLarrCount]
+	add		-1
+	sto		[ARSLarrCount]
+	add		[ARSLtoShift]
+	jnz		ARSLZeroLoop
+
+	
+ARSLreturn:		dword	0
+
+ARSLtoShift:	dword	0
+ARSLarrPtr:		dword	0
+ARSLarrSize:	dword	0
+
+ARSLarrCount:	dword	0
+ARSLsrcPtr:		dword	0
+ARSLdestPtr:	dword	0
+
+;This version doesn't test for oversize shift values
+;32 IS MAXIMUM ALLOWED
+
+UnpackShl:
+	load	[USHtoShift]
+	jnz		USHTestMax
+
+	jmp		USHreturn			;zero case
+	
+USHTestMax:
+	add		USHLimit
+	jnz		USHNormalCase		;max  case
+	
+	jmp		USHZeroOut
+
+USHNormalCase:
+	load	[USHtoShift]
+	sto		[Nvalue]
+	load	USHPrep
+	add		[jumpBase]
+	sto		[Nreturn]
+	jmp		Negate
+
+USHPrep:
+	add		USHSize					;Negate's Nvalue is in accumulator now
+	sto		[USHindex]				;index is (size - toShift)
+
+	add		-1						;arrays are zero indexed so offset it by one
+	add		[USHbufPtr]
+	sto		[USHsrcPtr]
+	
+	add		[USHtoShift]
+	sto		[USHdestPtr]
+
+USHShiftLoop:
+	load	[[USHsrcPtr]]			;shift goes here
+	sto		[[USHdestPtr]]
+	
+	load	[USHsrcPtr]
+	add		-1
+	sto		[USHsrcPtr]
+	
+	load	[USHdestPtr]
+	add		-1
+	sto		[USHdestPtr]
+	
+	load	[USHindex]
+	add		-1
+	sto		[USHindex]
+	jnz		USHShiftLoop
+
+USHZeroOut:
+	load	[USHtoShift]
+	sto		[USHindex]
+	
+	add		-1
+	add		[USHbufPtr]
+	sto		[USHdestPtr]
+	
+USHZeroLoop:
+	load	0
+	sto		[[USHdestPtr]]
+	
+	load	[USHdestPtr]
+	add		-1
+	sto		[USHdestPtr]
+	
+	load	[USHindex]
+	add		-1
+	sto		[USHindex]
+	jnz		USHZeroLoop
+	
+	
+USHreturn:		dword	0			;USHreturn
+
+USHbufPtr:		dword	0			;USHbufPtr
+USHtoShift:		dword	0
+
+USHindex:		dword	0			;USHindex
+USHsrcPtr:		dword	0			;USHsrcPtr
+USHdestPtr:		dword	0			;USHdestPtr
+USHSize:		equ		32			;USHSize
+USHLimit:		equ		-32			;USHLimit
+
+;unpackCarryLeft assumptions:
+;only shifts to the left
+;toShift is a positive number
+;toShift is less than or equal to 32
+			
+unpackCLeft:
+	load	[UPCtoShift]
+	jnz		UPCNormalCase
+	
+	jmp		UPCreturn
+	
+UPCNormalCase:	
+	sto		[Nvalue]
+	load	[jumpBase]
+	add		UPCPrep
+	sto		[Nreturn]
+	jmp		Negate
+	
+UPCPrep:
+	add		UPCsize
+	sto		[UPCindex]
+	
+	load	[UPCsrcPtr]				;carry bits are in index offset: size - toShift
+	add		[UPCindex]				;update pointer accordingly
+	sto		[UPCsrcPtr]
+	
+UPCLoop:
+	load	[[UPCsrcPtr]]
+	sto		[[UPCdestPtr]]
+	
+	load	[UPCsrcPtr]
+	add		1
+	sto		[UPCsrcPtr]
+	
+	load	[UPCdestPtr]
+	add		1
+	sto		[UPCdestPtr]
+	
+	load	[UPCindex]
+	add		1
+	sto		[UPCindex]
+	add		UPClimit
+	jnz		UPCLoop
+	
+UPCreturn:	dword	0
+
+UPCsrcPtr:	dword	0
+UPCdestPtr:	dword	0
+UPCtoShift:	dword	0
+
+UPCindex:	dword	0
+UPCsize:	equ		32
+UPClimit:	equ		-32
+
+;	pack: creates an integer value from an array of bits
+;
+;	pseudocode:
+;
+;	while index is less than number of bits to get
+;		at array position[index] get bit
+;		shift left 1 to the value of index
+;		add to value so far
+;		increment index
+;
+
+Pack:
+	load	0
+	sto		[PKcurrPos]
+	sto		[PKpackedVal]
+	
+PKLoop:
+	load	[[PKptrUnpacked]]	;retrieve bit at indexed location
+	shl		[PKcurrPos]			;shift to its proper position
+	add		[PKpackedVal]		;pack into the result
+	sto		[PKpackedVal]		;and save it
+	
+	load	[PKptrUnpacked]
+	add		1
+	sto		[PKptrUnpacked]
+	
+	load	[PKcurrPos]
+	add		1
+	sto		[PKcurrPos]			;update position
+	
+	add		[PKlimit]				;is PKcurrPos less than 32 (PKlimit)?
+	jnz		PKLoop
+
+	;return address
+PKreturn:		dword	0
+
+	;parameters
+PKpackedVal:	dword	0
+PKptrUnpacked:	dword 0
+
+PKcurrPos:		dword	0
+PKlimit:		dword	-32		;PKlimit
+
+; unpack routine: unpacks a value into an array bit by bit
+;
+; pseudocode:
+;
+; 		get bit i: shift value by distance from left side
+;			send bit to array index i
+;
+	
+Unpack:
+	load	[UPpackedVal]
+	sto		[UPworkingVal]
+	
+	load	0
+	sto		[UPcurrPos]
+	
+	load	32					;number of bits in an addressed value
+	
+UPLoop:
+	add		-1
+	sto		[UPfromLeft]		;update distance from big (left) end of value
+
+	load	[UPworkingVal]		;get bit
+	shl		[UPfromLeft]
+
+	jnz		UPUPBitIsSet
+
+UPBitIsUnset:
+	load	0					;store bit in accumulator
+	jmp		UPEnd
+	
+UPUPBitIsSet:
+	load	-1
+	shl		[UPcurrPos]			;if set - clear this bit
+	add		[UPworkingVal]
+	sto		[UPworkingVal]
+	
+	load	1					;store bit in accumulator
+
+UPEnd:
+	sto		[[UPptrUnpacked]]
+	
+	load	[UPptrUnpacked]
+	add		1
+	sto		[UPptrUnpacked]
+	
+	load	[UPcurrPos]			;update UPcurrPos
+	add		1
+	sto		[UPcurrPos]			
+	
+	load	[UPfromLeft]		;if more bits to shift
+	jnz		UPLoop				;start over
+	
+UPreturn:		dword 0
+
+	;parameters (public)
+UPpackedVal:	dword 0			;packed Value
+UPptrUnpacked:	dword 0
+
+UPcurrPos:		dword 0	
+UPfromLeft:		dword 0
+UPworkingVal:	dword 0			;working value
+
+ShiftRight:
+	load	0
+	sto		[SHRuCount]
+	sto		[SHRshiftCount]
+	sto		[SHRresult]
+	
+	load	32
+SHRLoop:
+	add		-1
+	sto		[SHRfromLeft]		
+	load	[SHRworkingVal]	
+	shl		[SHRfromLeft]		;test lowest bit
+	jnz		SHRBitSet
+	
+	load	[SHRshiftYet]
+	jnz		SHRNotReady
+	jmp		SHRReady
+	
+SHRBitSet:
+	load	-1
+	shl		[SHRuCount]			;clear bit
+	add		[SHRworkingVal]
+	sto		[SHRworkingVal]
+
+	load	[SHRshiftYet]		;are we ready to write yet?
+	jnz		SHRNotReady
+	
+SHRShiftBit:
+	load	1					;send bit to SHRresult
+	shl		[SHRshiftCount]
+	add		[SHRresult]
+	sto		[SHRresult]
+	jmp		SHRReady
+
+SHRNotReady:
+	add		-1
+	sto		[SHRshiftYet]
+	jmp		SHRLoopEnd
+
+SHRReady:
+	load	[SHRshiftCount]		;update shiftCount
+	add		1
+	sto		[SHRshiftCount]
+	
+SHRLoopEnd:
+	load	[SHRuCount]
+	add		1
+	sto		[SHRuCount]
+	load	[SHRfromLeft]
+	jnz		SHRLoop
+	
+	load	[SHRresult]
+	
+SHRreturn:		dword	0		;SHRreturn
+
+SHRshiftYet:	dword	0		;SHRshiftYet
+SHRworkingVal:	dword	0		;SHRworkingVal
+
+SHRfromLeft:	dword	32		;SHRfromLeft
+SHRresult:		dword	0		;SHRresult
+SHRshiftCount:	dword	0		;SHRshiftCount
+SHRuCount:		dword	0		;SHRuCount
+
+And:
+	load	0
+	sto		[ANDuCount]
+	sto		[ANDresult]
+	
+	load	32
+	
+ANDLoop:
+	add		-1
+	sto		[ANDfromLeft]
+	
+	load	[ANDval1]	
+	shl		[ANDfromLeft]
+	jnz		AND1BitSet
+	
+	load	[ANDval2]
+	shl		[ANDfromLeft]
+	jnz		AND2BitSet
+	jmp		ANDLoopEnd
+
+AND1BitSet:
+	load	-1
+	shl		[ANDuCount]		;clear bit
+	add		[ANDval1]
+	sto		[ANDval1]
+	
+	load	[ANDval2]
+	shl		[ANDfromLeft]
+	jnz		ANDBothBitSet
+	jmp		ANDLoopEnd
+	
+ANDBothBitSet:
+	load	1				;1 and 2 both set
+	shl		[ANDuCount]		;so set ANDresult bit
+	add		[ANDresult]
+	sto		[ANDresult]
+	
+AND2BitSet:
+	load	-1
+	shl		[ANDuCount]		;clear bit
+	add		[ANDval2]
+	sto		[ANDval2]
+
+ANDLoopEnd:
+	load	[ANDuCount]
+	add		1
+	sto		[ANDuCount]
+	load	[ANDfromLeft]
+	jnz		ANDLoop
+
+	load	[ANDresult]
+
+ANDreturn:		dword	0
+	
+ANDval1:		dword	0		;ANDval1
+ANDval2:		dword	0		;ANDval2
+
+ANDfromLeft:	dword	0		;ANDfromLeft
+ANDresult:		dword	0		;ANDresult
+ANDuCount:		dword	0		;ANDuCount

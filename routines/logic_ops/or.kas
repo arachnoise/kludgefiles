@@ -1,0 +1,57 @@
+	load	[or1]
+	sto		[temp1]
+	load	[or2]
+	sto		[temp2]
+	load	[fromLeft]
+	
+orBase:
+	add		-1
+	sto		[fromLeft]		
+	load	[temp1]	
+	shl		[fromLeft]		;test or1 lowest bit
+	jnz		or1bitset
+	
+	load	[temp2]
+	shl		[fromLeft]		;test or2 lowest bit
+	jnz		or2bitset
+	jmp		end
+
+or1bitset:
+	load	-1
+	shl		[ucount]		;clear bit
+	add		[temp1]
+	sto		[temp1]
+	
+	load	[temp2]
+	shl		[fromLeft]		;test or2 lowest bit
+	jnz		or2bitset
+	jmp		setResult
+	
+or2bitset:
+	load	-1
+	shl		[ucount]		;clear bit
+	add		[temp2]
+	sto		[temp2]
+	
+setResult:
+	load	1				;1 and 2 both set
+	shl		[ucount]		;so set result bit
+	add		[result]
+	sto		[result]
+
+end:
+	load	[ucount]
+	add		1
+	sto		[ucount]
+	load	[fromLeft]
+	jnz		orBase
+	
+	halt
+	
+or1:		dword	0xC784	;and2
+or2:		dword	0x847C	;and1
+temp1:		dword	0		;temp1
+temp2:		dword	0		;temp2
+fromLeft:	dword	32		;fromLeft
+result:		dword	0		;result
+ucount:		dword	0		;ucount

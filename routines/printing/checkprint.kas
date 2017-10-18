@@ -1,0 +1,534 @@
+;  +--------------------------------+
+;  |     **      **      **      ** |
+;8 |     **      **      **      ** |
+;  | **      **      **      **     |
+;7 | **      **      **      **     |
+;  |             **      **      ** |
+;6 |             **      **      ** |
+;  |         **                     |
+;5 |         **                     |
+;  |     **                         |
+;4 |     **                         |
+;  |         **      **      **     |
+;3 |         **      **      **     |
+;  |     **      **      **      ** |
+;2 |     **      **      **      ** |
+;  | **      **      **      **     |
+;1 | **      **      **      **     |
+;  +--------------------------------+
+;    A   B   C   D   E   F   G   H
+
+; Separating functionality into 4
+; draw border
+; draw numbers
+; draw letters
+; draw board
+
+Main:
+	in		0
+	
+	load	clearDisp
+	sto		[PSstrPtr]
+	load	[jumpBase]
+	add		PostCall1
+	sto		[PSreturn]
+	jmp		PrintString
+
+PostCall1:
+	load	[jumpBase]
+	add		PostCall2
+	sto		[DBreturn]
+	jmp		DrawBorder
+
+PostCall2:
+	load	echoOff
+	sto		[PSstrPtr]
+	load	[jumpBase]
+	add		PostCall3
+	sto		[PSreturn]
+	jmp		PrintString
+
+PostCall3:
+	in		0
+
+	load	attrOff
+	sto		[PSstrPtr]
+	load	[jumpBase]
+	add		PostCall4
+	sto		[PSreturn]
+	jmp		PrintString
+	
+PostCall4:
+	load	[jumpBase]
+	add		PostCall5
+	sto		[PLreturn]
+	jmp		PrintLetters
+	
+PostCall5:
+	load	echoOff
+	sto		[PSstrPtr]
+	load	[jumpBase]
+	add		PostCall6
+	sto		[PSreturn]
+	jmp		PrintString
+
+PostCall6:
+	in		0
+	
+	load	attrOff
+	sto		[PSstrPtr]
+	load	[jumpBase]
+	add		PostCall7
+	sto		[PSreturn]
+	jmp		PrintString
+	
+PostCall7:
+	load	[jumpBase]
+	add		PostCall8
+	sto		[PNreturn]
+	jmp 	PrintNumbers
+
+PostCall8:
+
+	load	echoOff
+	sto		[PSstrPtr]
+	load	[jumpBase]
+	add		PostCall9
+	sto		[PSreturn]
+	jmp		PrintString
+
+PostCall9:
+	in		0
+	
+	load	attrOff
+	sto		[PSstrPtr]
+	load	[jumpBase]
+	add		PostCall10
+	sto		[PSreturn]
+	jmp		PrintString
+	
+PostCall10:
+	load	[jumpBase]
+	add		PostCall11
+	sto		[DBOreturn]
+	jmp		DrawBoard
+
+PostCall11:
+	in		0
+	halt
+	
+attrOff:		dword	"\033[0m"
+echoOff:		dword	"\033[8m"
+clearDisp:		dword	"\033[2J"
+
+;Attention: this routine prints newline characters. It will clobber anything printed to the right of it.
+
+DrawBorder:
+	load	space
+	shl		lowestByte
+	out		0
+	out		0
+	
+	load	ULcorner
+	shl		lowestByte	
+	out		0
+	
+	load	boardWidth
+	
+DBTopBorderLoop:
+	sto		[DBloopCount]
+	
+	load	horzLine
+	shl		lowestByte
+	out		0
+	
+	load	[DBloopCount]
+	add		-1
+	jnz		DBTopBorderLoop
+
+	load	URcorner
+	shl		lowestByte
+	out		0
+	
+	load	newLine
+	shl		lowestByte
+	out		0
+	
+	load	boardHeight
+
+DBSideBorderLoop:
+	sto		[DBloopCount]
+	
+	load	cursorTBLeft
+	sto		[PSstrPtr]
+	load	[jumpBase]
+	add		DBPrLeftSide
+	sto		[PSreturn]
+	jmp		PrintString
+
+DBPrLeftSide:
+
+	load	vertLine
+	shl		lowestByte
+	out		0
+	
+	load	cursorTBRight
+	sto		[PSstrPtr]
+	load	[jumpBase]
+	add		DBPrRightSide
+	sto		[PSreturn]
+	jmp		PrintString
+	
+DBPrRightSide:
+
+	load	vertLine
+	shl		lowestByte
+	out		0
+	
+	load	newLine
+	shl		lowestByte
+	out		0
+
+	load	[DBloopCount]
+	add		-1
+	jnz		DBSideBorderLoop
+
+	load	space
+	shl		lowestByte
+	out		0
+	out		0
+	
+	load	LLcorner
+	shl		lowestByte	
+	out		0
+	
+	load	boardWidth
+	
+DBBottomBorderLoop:
+	sto		[DBloopCount]
+	
+	load	horzLine
+	shl		lowestByte
+	out		0
+	
+	load	[DBloopCount]
+	add		-1
+	jnz		DBBottomBorderLoop
+
+	load	LRcorner
+	shl		lowestByte
+	out		0
+	
+	load	newLine
+	shl		lowestByte
+	out		0
+	
+	jmp		DBreturn
+
+DBloopCount:		dword	0
+DBreturn:			dword	0
+cursorTBLeft:		dword	"\033[2C"			;cursor right 2
+cursorTBRight:		dword	"\033[32C"			;cursor right 32
+
+;Attention this routine assumes draw border has been called. 
+;It will not preset cursor position
+
+PrintLetters:
+	load	space
+	shl		lowestByte
+	out		0
+	out		0
+	out		0
+	out		0
+	
+	load	PLletterStart
+	sto		[PLletter]
+	load	sqPerSide
+
+PLLoop:
+	sto		[PLloopCount]
+	
+	load	[PLletter]
+	add		1
+	sto		[PLletter]
+	shl		lowestByte
+	out		0
+	
+	load	space
+	shl		lowestByte
+	out		0
+	out		0
+	out		0
+	
+	load	[PLloopCount]
+	add		-1
+	jnz		PLLoop
+
+	jmp		PLreturn
+	
+PLletterStart:	equ		64
+PLletter:		dword	0
+PLloopCount:	dword	0
+PLreturn:		dword	0
+
+PrintNumbers:
+	load	PNsetCursor
+	sto		[PSstrPtr]
+	load	[jumpBase]
+	add		PNIsSetCursor
+	sto		[PSreturn]
+	jmp		PrintString
+
+PNIsSetCursor:
+
+	load	zero
+	sto		[PNnumber]
+	
+	load	sqPerSide
+
+PNLoop:
+	sto		[PNloopCount]
+	
+	load	[PNnumber]
+	add		1
+	sto		[PNnumber]
+	shl		lowestByte
+	out		0
+	
+	load	PNnextSpot
+	sto		[PSstrPtr]
+	load	[jumpBase]
+	add		PNIsSetNextSpot
+	sto		[PSreturn]
+	jmp		PrintString
+
+PNIsSetNextSpot:
+
+	load	[PNloopCount]
+	add		-1
+	jnz		PNLoop
+	
+	jmp		PNreturn
+
+PNloopCount:	dword	0
+PNnumber:		dword	0
+PNreturn:		dword	0
+PNsetCursor:	dword	"\033[2;0H"
+PNnextSpot:		dword	"\033[1D\033[2B"
+
+DrawBoard:
+	load	DBOsetCursor
+	sto		[PSstrPtr]
+	load	[jumpBase]
+	add		DBOIsSetCursor
+	sto		[PSreturn]
+	jmp		PrintString
+
+DBOIsSetCursor:
+	load	0
+	sto		[DBOisWhiteSq]
+	sto		[DBOisLowerLine]
+	sto		[DBOsquareIndex]
+	sto		[DBOloopCount]
+	
+DBODrawLoop:
+
+DBOSquareLoop:
+	load	[DBOisWhiteSq]
+	add		[boolFlag]
+	sto		[DBOisWhiteSq]
+	jnz		DBOSetWhiteBg
+	
+	load	setGreenBg
+	jmp		DBOSetBgColor
+	
+DBOSetWhiteBg:
+	load	setWhiteBg
+	
+DBOSetBgColor:
+	sto		[PSstrPtr]
+	load	[jumpBase]
+	add		DBOPrSquare
+	sto		[PSreturn]
+	jmp		PrintString
+
+DBOPrSquare:
+	load	space
+	shl		lowestByte
+	out		0
+	
+	lir		[DBOsquareIndex]
+	load	[board+i]		
+	shl		DBOpieceBitPos
+	jnz		DBOPieceInSq 		;see if piece is in Square
+								;checks are 1-4. 0 indicates no piece
+	jmp		DBONoPcInSq
+	
+DBOPieceInSq:		
+	shl		DBOgetPcColor	;is it black or red?
+	jnz		DBORedPiece		;color divisible by 2 is black
+	
+	load	setBlackFg
+	jmp		DBOSetFgColor
+	
+DBORedPiece:
+	load	setRedFg
+	
+DBOSetFgColor:
+	sto		[PSstrPtr]
+	load	[jumpBase]
+	add		DBOSetPiece
+	sto		[PSreturn]
+	jmp		PrintString
+
+DBOSetPiece:
+	load	[DBOisLowerLine]	;check to see if this is upper or lower line
+	jnz		DBOSetLowerHalf
+	
+	load	halfBottom		;if lower print half-char upper
+	jmp		DBOPrSqSpot
+	
+DBOSetLowerHalf:
+	load	halfTop			;else print half-char lower
+	jmp		DBOPrSqSpot	
+	
+DBONoPcInSq:
+	load	space
+	
+DBOPrSqSpot:
+	shl		lowestByte
+	out		0
+	out		0
+	
+DBOEndSquare:
+	load	space
+	shl		lowestByte
+	out		0
+	
+	load	[DBOsquareIndex]		
+	add		1
+	sto		[DBOsquareIndex]	;every 8 squares go to new line
+	shl		DBOdivBy8		;have we reached the end of line yet
+	jnz		DBOSquareLoop
+	
+	load	[DBOisLowerLine]	;set line status
+	add		[boolFlag]			
+	sto		[DBOisLowerLine]		
+	jnz		DBOStartLowerLine
+	
+	load	[DBOisWhiteSq]		;every 2 lines (or next square)
+	add		[boolFlag]			;change background color
+	sto		[DBOisWhiteSq]		;otherwise we'll get stripes instead of checks
+	
+	jmp		DBOPrNextLine
+	
+DBOStartLowerLine:
+	load	[DBOsquareIndex]	;necessary to print square twice
+	add		-8					;once for upper line and once for lower
+	sto		[DBOsquareIndex]
+	
+DBOPrNextLine:
+	load	DBOnextLine
+	sto		[PSstrPtr]
+	load	[jumpBase]
+	add		DBODrawLoopFinal
+	sto		[PSreturn]
+	jmp		PrintString
+
+DBODrawLoopFinal:
+	load	[DBOloopCount]
+	add		-1
+	sto		[DBOloopCount]
+	add		boardHeight
+	jnz		DBODrawLoop
+
+	jmp		DBOreturn
+	
+DBOdivBy8:	equ		29
+DBOpieceBitPos:	equ		29
+DBOgetPcColor:	equ		2
+
+DBOsquareIndex:	dword	0					;DrawBoard square Index
+DBOloopCount:	dword	0
+
+DBOisLowerLine:	dword	0
+
+DBOpieceInSq:	dword	0
+DBOisWhiteSq:	dword	0
+
+DBOsetCursor:	dword	"\033[1;3H"			;row 1, column 3
+DBOnextLine:	dword	"\033[32D\033[1B"	;back 32 down 1
+
+DBOreturn:		dword	0
+
+;globals
+;ascii characters
+escape:			equ		27
+lBracket:		equ		91
+newLine:		equ		13
+semicolon:		equ		59
+space:			equ		32
+zero:			equ		48
+emm:			equ		109
+vertLine:		equ		0xBA
+URcorner:		equ		0xBB
+LRcorner:		equ		0xBC
+LLcorner:		equ		0xC8
+ULcorner:		equ		0xC9
+horzLine:		equ		0xCD
+halfTop:		equ		0xDF
+halfBottom:		equ		0xDC
+
+boardWidth:		equ		32
+boardHeight:	equ		16
+sqPerSide:		equ		8
+
+lowestBit:		equ		31
+lowestByte:		equ		24
+rowOffset:		equ		3
+
+;input values
+cEnter:			equ		-13
+
+;display control strings
+setWhiteBg:		dword	"\033[47m"
+setGreenBg:		dword	"\033[42m"
+setRedFg:		dword	"\033[31m"
+setBlackFg:		dword	"\033[30m"
+resetFgBg:		dword	"\033[37;40m"
+
+boolFlag:		dword	0x80000000
+jumpBase:		dword	0x04200000
+
+board:	dword	0, 2, 0, 2, 0, 2, 0, 2
+		dword	2, 0, 2, 0, 2, 0, 2, 0
+		dword	0, 0, 0, 2, 0, 2, 0, 2
+		dword	0, 0, 2, 0, 0, 0, 0, 0
+		dword	0, 1, 0, 0, 0, 0, 0, 0
+		dword   0, 0, 1, 0, 1, 0, 1, 0
+		dword	0, 1, 0, 1, 0, 1, 0, 1
+		dword	1, 0, 1, 0, 1, 0, 1, 0
+		
+PrintString:
+
+	load [[PSstrPtr]]
+	
+PSBegin:
+	out		0					;print value
+	shl		PSbyteSize
+	out		0
+	shl		PSbyteSize
+	out		0
+	shl		PSbyteSize
+	out		0
+		
+	load 	[PSstrPtr]
+	add		1
+	sto		[PSstrPtr]
+	load	[[PSstrPtr]]
+	jnz		PSBegin
+	jmp		PSreturn
+
+PSbyteSize:		equ 	8
+PSstrPtr: 		dword 	0				;string pointer
+PSreturn: 		dword	0

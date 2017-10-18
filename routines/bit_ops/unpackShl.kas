@@ -1,0 +1,287 @@
+;unpackShl.kas
+;shifts an unpacked value left
+
+callUnpack:
+	load	[myVal1]
+	sto		[UPpackedVal]
+	load	myBuf
+	sto		[UPptrUnpacked]
+	load	callUSH
+	add		[jumpBase]
+	sto		[UPreturn]
+	jmp		Unpack
+
+callUSH:
+	load	[toShift]
+	sto		[USHtoShift]
+	load	myBuf
+	sto		[USHbufPtr]
+	load	[jumpBase]
+	add		callPack
+	sto		[USHreturn]
+	jmp		UnpackShl
+
+callPack:
+	load	myBuf
+	sto		[PKptrUnpacked]
+	load	EndHere
+	add		[jumpBase]
+	sto		[PKreturn]
+	jmp		Pack
+	
+EndHere:
+	load	[PKpackedVal]
+	sto		[myVal2]
+	halt
+	
+jumpBase:	dword	0x04200000			;jmp command base value
+toShift:	dword	5					;to shift
+myVal1:		dword	0					;my value 1
+myVal2:		dword	0					;my value 2
+myBuf:		dword	0, 0, 0, 1, 0, 0, 1, 0
+			dword	0, 1, 0, 0, 1, 0, 0, 0
+			dword	0, 0, 0, 0, 0, 0, 0, 0
+			dword	0, 0, 0, 0, 0, 0, 0, 0
+			
+UnpackShl:
+
+	load	[USHtoShift]
+	jnz		USHTestMax
+
+	jmp		USHreturn			;zero case
+	
+USHTestMax:
+	add		USHLimit
+	jnz		USHTestOverSize		;max  case
+	
+	jmp		USHZeroOut
+	
+USHTestOverSize:
+	sto		[NTtoTest]
+	load	[jumpBase]
+	add		USHPostLT
+	sto		[NTreturn]
+	jmp		NegTest
+
+USHPostLT:
+	load	[NTtoTest]			;0 means number is positive - shift amount too big!
+	jnz		USHNormalCase
+	
+	jmp		USHreturn
+	
+USHNormalCase:
+	load	[USHtoShift]
+	sto		[Nvalue]
+	load	USHPrep
+	add		[jumpBase]
+	sto		[Nreturn]
+	jmp		Negate
+
+USHPrep:
+	add		USHSize					;Negate's Nvalue is in accumulator now
+	sto		[USHindex]				;index is (size - toShift)
+
+	add		-1						;arrays are zero indexed so offset it by one
+	add		[USHbufPtr]
+	sto		[USHsrcPtr]
+	
+	add		[USHtoShift]
+	sto		[USHdestPtr]
+
+USHShiftLoop:
+	load	[[USHsrcPtr]]			;shift goes here
+	sto		[[USHdestPtr]]
+	
+	load	[USHsrcPtr]
+	add		-1
+	sto		[USHsrcPtr]
+	
+	load	[USHdestPtr]
+	add		-1
+	sto		[USHdestPtr]
+	
+	load	[USHindex]
+	add		-1
+	sto		[USHindex]
+	jnz		USHShiftLoop
+
+USHZeroOut:
+	load	[USHtoShift]
+	sto		[USHindex]
+	
+	add		-1
+	add		[USHbufPtr]
+	sto		[USHdestPtr]
+	
+USHZeroLoop:
+	load	0
+	sto		[[USHdestPtr]]
+	
+	load	[USHdestPtr]
+	add		-1
+	sto		[USHdestPtr]
+	
+	load	[USHindex]
+	add		-1
+	sto		[USHindex]
+	jnz		USHZeroLoop
+	
+	
+USHreturn:		dword	0			;USHreturn
+
+USHbufPtr:		dword	0			;USHbufPtr
+USHtoShift:		dword	0
+
+USHindex:		dword	0			;USHindex
+USHsrcPtr:		dword	0			;USHsrcPtr
+USHdestPtr:		dword	0			;USHdestPtr
+USHSize:		equ		32			;USHSize
+USHLimit:		equ		-32			;USHLimit
+
+Negate:
+	load	[Nvalue]
+	sto		[Nmult]
+	load	32
+	
+NLoop:
+	add		-1
+	sto		[Ncounter]
+	load	[Nvalue]
+	shl		1
+	add		[Nmult]
+	sto		[Nvalue]
+	load	[Ncounter]
+	jnz		NLoop
+
+	load	[Nvalue]
+
+Nreturn:	dword	0
+	
+Nvalue:		dword	0			;Nvalue
+Nmult:		dword	0			;N old value
+Ncounter:	dword	0			;N counter
+
+Pack:
+	load	0
+	sto		[PKcurrPos]
+	
+PKLoop:
+	load	[[PKptrUnpacked]]	;retrieve bit at indexed location
+	shl		[PKcurrPos]			;shift to its proper position
+	add		[PKpackedVal]		;pack into the result
+	sto		[PKpackedVal]		;and save it
+	
+	load	[PKptrUnpacked]
+	add		1
+	sto		[PKptrUnpacked]
+	
+	load	[PKcurrPos]
+	add		1
+	sto		[PKcurrPos]			;update position
+	
+	add		[PKlimit]				;is PKcurrPos less than 32 (PKlimit)?
+	jnz		PKLoop
+
+	;return address
+PKreturn:		dword	0
+
+	;parameters
+PKpackedVal:	dword	0
+PKptrUnpacked:	dword 0
+
+PKcurrPos:		dword	0
+PKlimit:		dword	-32		;PKlimit
+
+Unpack:
+	load	[UPpackedVal]
+	sto		[UPworkingVal]
+	
+	load	0
+	sto		[UPcurrPos]
+	
+	load	32					;number of bits in an addressed value
+	
+UPLoop:
+	add		-1
+	sto		[UPfromLeft]		;update distance from big (left) end of value
+
+	load	[UPworkingVal]		;get bit
+	shl		[UPfromLeft]
+
+	jnz		UPUPBitIsSet
+
+UPBitIsUnset:
+	load	0					;store bit in accumulator
+	jmp		UPEnd
+	
+UPUPBitIsSet:
+	load	-1
+	shl		[UPcurrPos]			;if set - clear this bit
+	add		[UPworkingVal]
+	sto		[UPworkingVal]
+	
+	load	1					;store bit in accumulator
+
+UPEnd:
+	sto		[[UPptrUnpacked]]
+	
+	load	[UPptrUnpacked]
+	add		1
+	sto		[UPptrUnpacked]
+	
+	load	[UPcurrPos]			;update UPcurrPos
+	add		1
+	sto		[UPcurrPos]			
+	
+	load	[UPfromLeft]		;if more bits to shift
+	jnz		UPLoop				;start over
+	
+UPreturn:		dword 0
+
+	;parameters (public)
+UPpackedVal:	dword 0			;packed Value
+UPptrUnpacked:	dword 0
+
+UPcurrPos:		dword 0	
+UPfromLeft:		dword 0
+UPworkingVal:	dword 0			;working value
+
+;tests to see if a number is negative
+;
+;toTest changes to 0 if positive
+NegTest:	
+	load	31
+	sto		[NTfromLeft]
+	load	0
+	sto		[NTfromRight]
+	
+NTLoop:
+	load	[NTtoTest]
+	shl		[NTfromLeft]		;shl
+	jnz		NTBitSet
+	
+NTBitUnset:
+	jmp		NTEnd
+	
+NTBitSet:
+	load	-1
+	shl		[NTfromRight]
+	add		[NTtoTest]
+	sto		[NTtoTest]
+
+NTEnd:
+	load	[NTfromRight]
+	add		1
+	sto		[NTfromRight]
+	load	[NTfromLeft]
+	add		-1
+	sto		[NTfromLeft]
+	jnz		NTLoop
+	
+	jmp		NTreturn
+	
+	
+NTfromLeft:		dword	0		;position relative to HO bit
+NTfromRight:	dword	0		;position relative to LO bit
+NTtoTest:		dword	0		;NTtoTest
+NTreturn:		dword	0		;NTtoReturn

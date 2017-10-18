@@ -1,0 +1,270 @@
+;printing out player's turn
+; +-------------------+
+; |Player 1: your turn|
+; +-------------------+
+
+main:
+	in		0
+
+	load	5					;prepare PrintBox variables
+	sto		[PBcursorY]
+	load	48
+	sto		[PBcursorX]
+	load	3
+	sto		[PBheight]
+	load	19
+	sto		[PBwidth]
+	load	[jumpBase]
+	add		PostCall1
+	sto		[PBreturn]
+	
+	jmp		PrintBox
+
+PostCall1:
+	in		0
+	halt
+
+jumpBase:		dword	0x04200000
+playerTurn:		dword	0
+
+PrPlayerDigit:
+
+PPDsetCursor:	dword	0
+PPDreturn:		dword	0
+
+PrPlayerText:
+	load	PPTsetCursor			;go to spot	
+	sto		[PSstrPtr]
+	load	[jumpBase]
+	add		PPTPr1stHalf
+	sto		[PSreturn]
+	jmp		PrintString
+	
+PPTPr1stHalf:
+
+PPTPr2ndHalf:
+
+PPTsetCursor:	dword	"\033[6;49H"
+PPTreturn:		dword	0
+
+;box must be larger than 2x2
+
+PrintBox:
+	load	escape
+	shl		lowestByte
+	out		0
+	
+	load	lBracket
+	shl		lowestByte
+	out		0
+	
+	load	[PBcursorY]
+	shl		lowestByte
+	out		0
+	
+	load	semicolon
+	shl		lowestByte
+	out		0
+	
+	load	[PBcursorX]
+	shl		lowestByte
+	out		0
+	
+	load	setCursXYSfx			;print ANSI cursor set escape sequence "^[[cursorY;cursorXH"
+	shl		lowestByte				;to set cursor
+	out		0
+	
+	in		0
+	halt							;added to test routine
+	
+PBPrTop:	
+	load	ULSingle
+	shl		lowestByte
+	out		0
+
+	load	[PBwidth]
+	
+PBPrTopLoop:
+	sto		[PBhorzCount]		
+	
+	load	HorzSingle
+	shl		lowestByte
+	out		0
+	
+	load	[PBhorzCount]
+	add		-1
+	jnz		PBPrTopLoop
+
+	load	URSingle
+	shl		lowestByte
+	out		0
+	
+	
+	load	[PBwidth]
+	add		-2
+	sto		[PBtoRtMargin]
+	
+	load	escape
+	shl		lowestByte
+	out		0
+	load	lBracket
+	shl		lowestByte
+	out		0
+	load	[PBwidth]
+	shl		lowestByte
+	out		0
+	load	mvCursLfSfx				;to move left by PBwidth chars
+	shl		lowestByte				;print "^[[PBwidthD"
+	out		0
+	
+	load	escape
+	shl		lowestByte
+	out		0
+	load	lBracket
+	shl		lowestByte
+	out		0
+	load	1
+	shl		lowestByte
+	out		0
+	load	mvCursDnSfx				;to move down by 1 char
+	shl		lowestByte				;print "^[[1D"
+	out		0
+	
+	load	[PBheight]
+	add		-2
+	
+PBPrVertLoop:
+	sto		[PBvertCount]
+	
+	load	VertSingle
+	shl		lowestByte
+	out		0
+	
+	load	escape
+	shl		lowestByte
+	out		0
+	load	lBracket
+	shl		lowestByte
+	out		0
+	load	[PBtoRtMargin]
+	shl		lowestByte
+	out		0
+	load	mvCursLfSfx				
+	shl		lowestByte				
+	out		0
+	
+	load	VertSingle
+	shl		lowestByte
+	out		0
+
+	load	escape
+	shl		lowestByte
+	out		0
+	load	lBracket
+	shl		lowestByte
+	out		0
+	load	[PBwidth]
+	shl		lowestByte
+	out		0
+	load	mvCursLfSfx				;to move left by PBwidth chars
+	shl		lowestByte				;print "^[[PBwidthD"
+	out		0
+	
+	load	escape
+	shl		lowestByte
+	out		0
+	load	lBracket
+	shl		lowestByte
+	out		0
+	load	1
+	shl		lowestByte
+	out		0
+	load	mvCursDnSfx				;to move down by 1 char
+	shl		lowestByte				;print "^[[1D"
+	out		0
+	
+	load	[PBvertCount]
+	add		-1
+	jnz		PBPrVertLoop
+	
+	
+	load	LLSingle
+	shl		lowestByte
+	out		0
+	
+	load	[PBwidth]
+	
+PBPrBottomLoop:
+	sto		[PBhorzCount]		
+	
+	load	HorzSingle
+	shl		lowestByte
+	out		0
+
+	load	[PBhorzCount]
+	add		-1
+	jnz		PBPrBottomLoop
+
+	load	LRSingle
+	shl		lowestByte
+	out		0
+	
+	jmp		PBreturn
+
+PBvertCount:	dword	0
+PBhorzCount:	dword	0
+PBreturn:		dword	0
+
+PBcursorX:		dword	0
+PBcursorY:		dword	0
+PBwidth:		dword	0
+PBheight:		dword	0
+
+PBtoRtMargin:	dword	0
+
+PBplayerStr:	dword	"Player "
+PBturnStr:		dword	": your turn"
+
+escape:			equ		27
+semicolon:		equ		59
+lBracket:		equ		91
+
+VertSingle:		equ		179
+HorzSingle:		equ		196
+ULSingle:		equ		218
+URSingle:		equ		191
+LRSingle:		equ		217
+LLSingle:		equ		192
+
+lowestByte:		equ		24
+mvCursUpSfx:	equ		65			;suffix is 'A'
+mvCursDnSfx:	equ		66			;suffix is 'B'
+mvCursRtSfx:	equ		67			;suffix is 'C'
+mvCursLfSfx:	equ		68			;suffix is 'D'
+
+setCursXYSfx:	equ		72			;suffix is 'H'
+setWtOnBk:		dword	"\033[37;40m"
+
+PrintString:
+
+	load [[PSstrPtr]]
+	
+PSBegin:
+	out		0					;print value
+	shl		PSbyteSize
+	out		0
+	shl		PSbyteSize
+	out		0
+	shl		PSbyteSize
+	out		0
+		
+	load 	[PSstrPtr]
+	add		1
+	sto		[PSstrPtr]
+	load	[[PSstrPtr]]
+	jnz		PSBegin
+	jmp		PSreturn
+
+PSbyteSize:		equ 	8
+PSstrPtr: 		dword 	0				;string pointer
+PSreturn: 		dword	0

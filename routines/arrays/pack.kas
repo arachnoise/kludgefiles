@@ -1,0 +1,39 @@
+
+;	pack.kas
+;
+;	creates an integer value from an array of bits
+;
+;	pseudocode:
+;
+;	while index is less than number of bits to get
+;		at array position[index] get bit
+;		shift left 1 to the value of index
+;		add to value so far
+;		increment index
+;
+
+pack:
+	lir		[PKCurrPos]
+	
+	load	[PKunpacked+i]		;retrieve bit at indexed location
+	shl		[PKCurrPos]			;shift to its proper position
+	add		[PKpackedVal]		;pack into the result
+	sto		[PKpackedVal]		;and save it
+	
+	load	[PKCurrPos]
+	add		1
+	sto		[PKCurrPos]			;update position
+	
+	add		[PKlimit]				;is PKCurrPos less than 32 (PKlimit)?
+	jnz		pack
+
+	halt
+
+PKpackedVal:	dword	0
+PKCurrPos:		dword	0
+PKlimit:		dword	-32		;PKlimit
+
+PKunpacked:		dword 0, 0, 0, 0, 0, 0, 0, 0
+				dword 0, 0, 0, 0, 0, 0, 0, 0
+				dword 0, 0, 0, 0, 0, 0, 0, 0
+				dword 0, 0, 0, 0, 0, 0, 0, 0

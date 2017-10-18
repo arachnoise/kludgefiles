@@ -1,0 +1,78 @@
+;highest order bit detector (unsigned)
+;outputs numeric result indicating highest order set bit found
+
+	load	32
+
+Loop:
+	add		-1
+	sto		[loopCount]
+
+	load	1
+	shl		[loopCount]
+	sto		[HOFtoTest]
+	load	[jumpBase]
+	add		PostCall1
+	sto		[HOFreturn]
+	jmp		HOFinder
+
+PostCall1:
+	sto		[[stackP]]
+	
+	load	[stackP]
+	add		-1
+	sto		[stackP]
+	
+	load	[loopCount]
+	jnz		Loop
+	
+	
+	halt
+
+stackP:		dword	0xFFFF
+loopCount:	dword	0
+jumpBase:	dword	0x04200000 	;jump base
+
+HOFinder:
+	load	-1
+	sto		[HOFresult]
+	load	0
+	sto		[HOFfromRight]
+	
+	load	32
+	
+HOFLoop:
+	add		-1
+	sto		[HOFfromLeft]
+	load	[HOFtoTest]
+	shl		[HOFfromLeft]
+	jnz		HOFBitSet
+	
+HOFBitUnset:
+	jmp		HOFEnd
+	
+HOFBitSet:
+	load	-1
+	shl		[HOFfromRight]
+	add		[HOFtoTest]
+	sto		[HOFtoTest]
+	
+	load	[HOFfromRight]
+	sto		[HOFresult]
+
+HOFEnd:
+	load	[HOFfromRight]
+	add		1
+	sto		[HOFfromRight]
+	load	[HOFfromLeft]
+	jnz		HOFLoop
+	
+	load	[HOFresult]
+	
+HOFreturn:		
+	jmp		0xFFFF				;HOFtoReturn
+
+HOFfromLeft:	dword	0		;position relative to HO bit
+HOFfromRight:	dword	0		;position relative to LO bit
+HOFtoTest:		dword	0		;HOFtoTest
+HOFresult:		dword	0		;HOFresult
+
